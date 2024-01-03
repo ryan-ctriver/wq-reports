@@ -1,0 +1,23 @@
+---
+title: "Practice"
+author: "Ryan O'Donnell"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Coming soon!
+
+```{r cars}
+summary(cars)
+```
+
+## Future plots!
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
