@@ -1,12 +1,12 @@
-name: "cars"
+name: "WQ Reports"
 output_dir: "docs"
 navbar:
-  title: "Cars"
+  title: "Connecticut River Conservancy Water Quality Reports"
   left:
   - text: "Home"
     href: index.html
-  - text: "Test"
+  - text: "Practice Report"
     href: Practice.html
 output:
   html_document:
-    theme: cosmo
+    theme: hacker
