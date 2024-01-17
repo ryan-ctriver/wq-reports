@@ -9,4 +9,3 @@ navbar:
     href: Practice.html
 output:
   html_document:
-    theme: spacelab
