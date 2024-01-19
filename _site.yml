@@ -5,8 +5,8 @@ navbar:
   left:
   - text: "Home"
     href: index.html
-  - text: "Practice Report"
-    href: Practice.html
+  - text: "Microplastics 2021-2022"
+    href: MP-blog-post.html
 output:
   html_document:
     theme: cerulean
