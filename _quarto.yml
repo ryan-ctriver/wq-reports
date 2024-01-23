@@ -6,7 +6,7 @@ website:
   title: ""
   navbar:
     background: "#006E9C"
-    logo: posts/_images/CRCLOGO.png
+    logo: posts/images/CRCLOGO.png
     right:
     - text: "CRC Homepage"
       href: http://www.ctriver.org
