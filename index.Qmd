@@ -9,3 +9,5 @@ listing:
   table-hover: true
 page-layout: full
 ---
+
+The following posts are the available reports from the Connecticut River Conservancy water quality monitoring program.
