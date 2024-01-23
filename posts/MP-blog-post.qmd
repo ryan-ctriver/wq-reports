@@ -32,7 +32,7 @@ crc_palette <- c(crcblue, crcorange, crcltblue, crcgreen, crcskyblue, crctan, cr
 
 # Data Import
 
-filename <- "_data/21_22MP-02072023.xlsx"
+filename <- "data/21_22MP-02072023.xlsx"
 
 results_orig <- read_xlsx(
   filename,
@@ -98,14 +98,14 @@ Connecticut River Conservancy (CRC) has been piloting a volunteer microplastics 
 
 For this project, volunteers collected two samples each in 2021 and 2022 from the 13 sites pictured on the map below. Most sites were located on the mainstem Connecticut River. We also collected from 2 major tributaries, the Deerfield and West Rivers, and selected a remote headwater location in the HO Cook State Forest in Heath, MA. A few of our 2022 samples froze in our fridge and broke, so we unfortunately lost four samples. Thankfully, each of the samples that froze was from a different site, so we have at least one observation from every site for each year.
 
-![Sampling Location Map](_images/MPSiteMap21.png)
+![Sampling Location Map](images/MPSiteMap21.png)
 
 In the lab, we filtered samples using a vacuum pump and looked at the filters under a microscope. In 2021, filters were examined while still wet. In 2022, we fixed the filters to slides using forensic tape (think dusting for fingerprints...). Fixing the filters to the slide allows for the same exact view under the microscope for multiple viewers. It is our goal to have volunteers do the lab analysis as well, and using this technique gets us one step closer.
 
 ::: {layout-ncol="2"}
-![Filtering a sample in the lab](_images/image-1744518717.png)
+![Filtering a sample in the lab](images/image-1744518717.png)
 
-![Filters mounted on slides with tape](_images/image-1430518754.png)
+![Filters mounted on slides with tape](images/image-1430518754.png)
 :::
 
 The lab analysists recorded each individual microplastic observed and classified it by type, size, and color. We found microplastics in every sample collected! The most common type of microplastic was fiber, most common size category was "Small Microplastic" (under 1 mm), and the most common color was blue. Another prominent type of microplastic of note was transparent filaments that we attribute primarily to small pieces of fishing line. Below are a series of charts that show what we found.
