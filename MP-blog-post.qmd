@@ -1,9 +1,13 @@
 ---
 title: "Volunteer Monitoring for Microplastics in the Connecticut River"
+author: "Ryan O'Donnell"
+date: "2/1/2023"
 format: html
 editor: visual
 echo: FALSE
 embed-resources: true
+categories:
+  - Microplastics
 ---
 
 ```{R}

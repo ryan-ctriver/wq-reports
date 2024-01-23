@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Connecticut River Conservancy Water Quality Reports",
+    "section": "",
+    "text": "The following posts are the water quality reports created by the Connecticut River Conservancy Volunteer Water Quality Monitoring Program.\n\n\n\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "MP-blog-post.html",
+    "href": "MP-blog-post.html",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "",
+    "text": "Connecticut River Conservancy (CRC) has been piloting a volunteer microplastics monitoring program in the Connecticut River watershed. CRC holds a watershed wide trash cleanup each year and our River Stewards work in each state to “stop trash before it starts” by advocating for legislation like bottle bills and extended producer responsibility. There was no existing data about plastic’s impact on our waterways to support this advocacy work. Our members have also expressed interest in understanding how emerging contaminants, such as microplastics, are present in the Connecticut River watershed. We have been working over the past two years to develop a program that engages volunteers and starts to fill this knowledge gap in a responsible way."
+  },
+  {
+    "objectID": "MP-blog-post.html#project-overview",
+    "href": "MP-blog-post.html#project-overview",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "",
+    "text": "Connecticut River Conservancy (CRC) has been piloting a volunteer microplastics monitoring program in the Connecticut River watershed. CRC holds a watershed wide trash cleanup each year and our River Stewards work in each state to “stop trash before it starts” by advocating for legislation like bottle bills and extended producer responsibility. There was no existing data about plastic’s impact on our waterways to support this advocacy work. Our members have also expressed interest in understanding how emerging contaminants, such as microplastics, are present in the Connecticut River watershed. We have been working over the past two years to develop a program that engages volunteers and starts to fill this knowledge gap in a responsible way."
+  },
+  {
+    "objectID": "MP-blog-post.html#challenges",
+    "href": "MP-blog-post.html#challenges",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "Challenges",
+    "text": "Challenges\n\nMicroplastics are pervasive in our environments and preventing contamination is too challenging/costly for a grassroots volunteer program\nField and lab blanks confirm minor contamination is occurring\nNo established Standard Operating Procedure for volunteer monitoring of microplastics in rivers has required us to develop our own and adjust as we learn\nSome opposition received from university level professionals who are skeptical of the value of volunteer level data in the field of microplastics\nAlgae clogs our filters! We are working out ways to preserve our samples better before filtering"
+  },
+  {
+    "objectID": "MP-blog-post.html#successes",
+    "href": "MP-blog-post.html#successes",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "Successes",
+    "text": "Successes\n\nWe can definitively say that our local waters are contaminated with microplastics!\nVolunteers are excited to be contributing to local research of microplastics\nAnalysis can occur during the winter months when our lab is not otherwise in use\nIn Year 2, we were able to adapt a procedure developed at Staffordshire University using forensic tape to fix filter to slides so the slides can be reviewed more than once\nWe will be developing the training procedure for volunteers to take over the reading of the results this spring"
+  },
+  {
+    "objectID": "MP-blog-post.html#results-and-discussion",
+    "href": "MP-blog-post.html#results-and-discussion",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "Results and Discussion",
+    "text": "Results and Discussion\nFor this project, volunteers collected two samples each in 2021 and 2022 from the 13 sites pictured on the map below. Most sites were located on the mainstem Connecticut River. We also collected from 2 major tributaries, the Deerfield and West Rivers, and selected a remote headwater location in the HO Cook State Forest in Heath, MA. A few of our 2022 samples froze in our fridge and broke, so we unfortunately lost four samples. Thankfully, each of the samples that froze was from a different site, so we have at least one observation from every site for each year.\n\n\n\nSampling Location Map\n\n\nIn the lab, we filtered samples using a vacuum pump and looked at the filters under a microscope. In 2021, filters were examined while still wet. In 2022, we fixed the filters to slides using forensic tape (think dusting for fingerprints…). Fixing the filters to the slide allows for the same exact view under the microscope for multiple viewers. It is our goal to have volunteers do the lab analysis as well, and using this technique gets us one step closer.\n\n\n\n\n\n\nFiltering a sample in the lab\n\n\n\n\n\n\n\nFilters mounted on slides with tape\n\n\n\n\n\nThe lab analysists recorded each individual microplastic observed and classified it by type, size, and color. We found microplastics in every sample collected! The most common type of microplastic was fiber, most common size category was “Small Microplastic” (under 1 mm), and the most common color was blue. Another prominent type of microplastic of note was transparent filaments that we attribute primarily to small pieces of fishing line. Below are a series of charts that show what we found.\n\n\nWarning: The `size` argument of `element_rect()` is deprecated as of ggplot2 3.4.0.\nℹ Please use the `linewidth` argument instead.\n\n\n\n\n\nFirst, we have a look at the overall distribution of all the microplastics observed in all samples classified by type, size, and color. We can see that the majority of samples were fibers and that most of those were blue.\n\n\n\n\n\nHere we have the distribution of five types at each site and sample. Refer to the map above to remind yourself where each site is located. The number of microplastics was variable at each site. Something of note is that it seems to be that sometimes a particular type other than fiber was found in greater numbers indicated a specific item like a piece of rope or styrofoam was degrading at the site.\n\n\n\n\n\nHere we can see the distribution of colors found at each site and sample. As the first graph suggested, blue is the dominant color found across all the samples.\n\n\n\n\n\nHere is a closer look at the proportions of different colors found in each of the types of microplastic. We noticed that the most likely color of filament or rope was transparent and it is likely due to bits of fishing line. We also found that foams were dominated by white, which is likely from styrofoam."
+  },
+  {
+    "objectID": "MP-blog-post.html#conclusion",
+    "href": "MP-blog-post.html#conclusion",
+    "title": "Volunteer Monitoring for Microplastics in the Connecticut River",
+    "section": "Conclusion",
+    "text": "Conclusion\nAfter two years of this program, we have found it valuable to have data on how microplastics are affecting us locally in the Connecticut River watershed. We plan to continue this program, perhaps expand our research to different research questions, and use this data to support our advocacy work around trash and plastics."
+  }
+]
