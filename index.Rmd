@@ -1,14 +1,10 @@
 ---
-title: "Index"
-author: "Ryan"
-date: "`r Sys.Date()`"
-output: html_document
+title: "Connecticut River Conservancy Water Quality Reports"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  categories: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## This is the landing page
-
-This is where we'll explain what the different reports are.
+The following posts are the water quality reports created by the Connecticut River Conservancy Volunteer Water Quality Monitoring Program.
