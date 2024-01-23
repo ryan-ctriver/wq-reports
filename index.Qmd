@@ -9,5 +9,3 @@ listing:
   table-hover: true
 page-layout: full
 ---
-
-Water Quality Reports
