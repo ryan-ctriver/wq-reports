@@ -1,0 +1,61 @@
+Key,Name,Site ID,Site Type,State,Lat,Lon
+1,Hall Stream,02-HAS,Tributary,New Hampshire,45.0401,-71.4913
+2,Mohawk R.,00-MHK,Tributary,New Hampshire,44.9001,-71.516
+3,Simms Stream,05-SMS,Tributary,New Hampshire,44.84917,-71.49306
+4,Nulhegan R.,Nulhegan_0.3,Tributary,Vermont,44.75499,-71.635643
+5,Paul Stream,Paul Stream_0.1,Tributary,Vermont,44.696671,-71.603607
+6,U. Ammonoosuc R.,01-UAM,Tributary,New Hampshire,44.5925,-71.516
+7,Israel R.,02-ISR,Tributary,New Hampshire,44.48792,-71.56961
+8,Moose R.,Moose_14.3,Tributary,Vermont,44.48333,-71.865562
+9,Johns R.,01-JHN,Tributary,New Hampshire,44.4264,-71.6763
+10,Passumpsic R.,Passumpsic_4.9,Tributary,Vermont,44.374439,-72.031113
+11,Stevens R.,Stevens_1.4,Tributary,Vermont,44.301716,-72.058197
+12,Ammonoosuc R.,03-AMM,Tributary,New Hampshire,44.15478,-71.9819
+13,Wells R.,Wells_0.6,Tributary,Vermont,44.154442,-72.048889
+14,Clark Brk.,02-CKB,Tributary,New Hampshire,44.0898,-72.0249
+15,Waits R.,Waits_0.3,Tributary,Vermont,43.996505,-72.122354
+16,Grant Brk.,02-GNB,Tributary,New Hampshire,43.80753,-72.1635609
+17,Ompompanoosuc R.,Ompompanoosuc_3.8,Tributary,Vermont,43.785831,-72.25472
+18,Hewes Brk.,01-HEW,Tributary,New Hampshire,43.7854,-72.1971
+19,White R.,White_1.1,Tributary,Vermont,43.71314,-72.41842
+20,Mink Brk.,01T-MKB,Tributary,New Hampshire,43.6928,-72.27483813
+21,Mascoma R.,01-MSC,Tributary,New Hampshire,43.63383,-72.31739
+22,Ottaquechee R.,OtR006,Tributary,Vermont,43.59316,-72.34883
+23,Blow-Me-Down Brk.,01-BMD,Tributary,New Hampshire,43.4964,-72.3759
+24,Sugar R.,01-SGR,Tributary,New Hampshire,43.39833,-72.39386
+25,Black R.,Black_1.5,Tributary,Vermont,43.27113,-72.45415
+26,Williams R.,Williams_.92,Tributary,Vermont,43.183252,-72.463517
+27,Saxtons R.,Saxtons_.19,Tributary,Vermont,43.123,-72.4424
+28,Cold R.,02-CLD,Tributary,New Hampshire,43.13213,-72.39039
+29,Sacketts Brk.,Sacketts_1.0,Tributary,Vermont,42.975122,-72.517803
+30,West R.,West_1.4,Tributary,Vermont,42.87967,-72.57383
+31,Whetstone Brk.,Whetstone_.2,Tributary,Vermont,42.8507,-72.5594
+32,Newton Brk.,Newton_00.1,Tributary,Vermont,42.72619,-72.46018
+33,Ashuelot R.,02-ASH,Tributary,New Hampshire,42.77974,-72.49004
+34,Millers R.,W0690,Tributary,Massachusetts,42.59751119,-72.43783955
+35,Deerfield R.,MA-DFR_01.1,Tributary,Massachusetts,42.56966309,-72.59214586
+36,"Lake Warner (Mill R., Hadley)",LWBR01,Tributary,Massachusetts,42.385791,-72.581105
+37,Fort R.,W1051 DS,Tributary,Massachusetts,42.33278638,-72.57858317
+38,Mill R. (Northampton),W1796,Tributary,Massachusetts,42.31899322,-72.66514075
+39,Chicopee R.,W0475,Tributary,Massachusetts,42.15037455,-72.60763627
+40,Westfield R.,W0474,Tributary,Massachusetts,42.09002807,-72.62686454
+41,Pecousic Brk.,MA  - Pecousic,Tributary,Massachusetts,42.074607,-72.580817
+42,Cooley Brk.,MA - Cooley,Tributary,Massachusetts,42.060797,-72.57785
+43,Scantic R.,EW3,Tributary,Connecticut,41.894207,-72.5729
+44,Farmington R.,FR-W2,Tributary,Connecticut,41.857188,-72.640467
+45,Park R.,CT - Park,Tributary,Connecticut,41.805311,-72.726284
+46,Mattabasset R.,CT - Mattabassett,Tributary,Connecticut,41.55807,-72.64308
+47,Salmon R.,CT - Salmon,Tributary,Connecticut,41.549713,-72.451047
+48,Eightmile R.,CT - Eightmile,Tributary,Connecticut,41.4024,-72.3454
+49,Lieutenant R.,CT - Lieutenant,Tributary,Connecticut,41.31402486,-72.33724041
+A,"Pittsburgh, NH",74-CNT,Mainstem,New Hampshire,45.0211,-71.464
+B,"Stratford, NH",67-CNT,Mainstem,New Hampshire,44.7526,-71.6303
+C,"Dalton, NH",53-CNT,Mainstem,New Hampshire,44.411,-71.7227
+D,"Haverhill, NH",43-CNT,Mainstem,New Hampshire,44.1539,-72.0408
+E,"Hanover, NH",30-CNT,Mainstem,New Hampshire,43.70356,-72.29937
+F,Sumner Falls,25-CNT,Mainstem,New Hampshire,43.56395,-72.38052
+G,"Walpole, NH",10-CNT,Mainstem,New Hampshire,43.0847,-72.433
+H,"Northfield, MA",01-CNT/W0478,Mainstem,Massachusetts,42.6836,-72.47142
+I,"Thompsonville, CT",W1395,Mainstem,Connecticut,42.00311225,-72.60855911
+J,"Middletown, CT",CTR 030,Mainstem,Connecticut,41.561369,-72.64301
+K,"Essex, CT",CTR 006,Mainstem,Connecticut,41.351976,-72.384367

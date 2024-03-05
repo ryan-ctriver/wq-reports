@@ -1,0 +1,1048 @@
+---
+title: "Samplepalooza Final Report"
+author: "Ryan O'Donnell"
+desription: "Final Report for the Samplepalooza Connecticut River nutrient sampling project"
+date: "3/1/2024"
+format:
+  html:
+    df-print: paged
+    toc: true
+    echo: false
+    warning: false
+categories:
+  - Samplepalooza
+  - Nutrient Monitoring
+  - Chloride
+  - Nitrogen
+  - Phosphorus
+---
+
+```{R}
+#| label: setup
+#| warning: FALSE
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(dataRetrieval)
+library(rvest)
+library(sf)
+library(gt)
+library(treemap)
+library(d3Tree)
+```
+
+```{R}
+#| label: data setup
+#| cache: TRUE
+splza_orig <- read_xlsx("data/14_21SamplepaloozaResults.xlsx",
+                        skip = 2,
+                        col_names = c("SiteName", "SiteID", "SiteType", "State", "EcoRegion", "2014-TN", "2015-TN", "2018-TN", "2019-TN", "2020-TN", "2021-TN", "2014-TP", "2015-TP", "2018-TP", "2019-TP", "2020-TP", "2021-TP", "2014-Cl", "2015-Cl", "2020-Cl", "2021-Cl", "Date2021","Lat", "Lon"))
+
+# step 1 - recode chloride data 
+# step 2 - convert column types
+# step 3 - pivot data and relocate new columns
+# step 4 - add sample date and result unit columns
+# step 5 - remove 2021Date column
+
+splza_tidy <- splza_orig %>%
+  mutate(`2014-Cl` = recode(`2014-Cl`, "<3" = "1.5", "< 3" = "1.5"),
+         `2015-Cl` = recode(`2015-Cl`, "<3" = "1.5", "< 3" = "1.5"),
+         `2021-Cl` = recode(`2021-Cl`, "<3" = "1.5", "< 3" = "1.5"),
+         .keep = "all") %>%
+  type_convert() %>%
+  pivot_longer(col = starts_with("20"),
+               names_to = c("Year", "Parameter"),
+               names_sep = "-",
+               values_to = "ResultValue",
+               values_drop_na = TRUE,
+               ) %>%
+  relocate(Year:ResultValue, .before = SiteType) %>%
+  mutate("SampleDate" = case_when(
+    Year == 2014 ~ ymd("2014-08-06"),
+    Year == 2015 ~ ymd("2015-09-10"),
+    Year == 2018 ~ ymd("2018-09-20"),
+    Year == 2019 ~ ymd("2019-09-12"),
+    Year == 2020 ~ ymd("2020-09-17"),
+    Year == 2021 ~ ymd(paste(`Date2021`))), 
+    .after = `Year`) %>%
+  mutate("ResultUnit" = case_when(
+    Parameter == "TN" ~ "mg-N/L",
+    Parameter == "TP" ~ "\U03BCg-P/L" ,
+    Parameter == "Cl" ~ "mg-Cl/L"),
+    .after = `ResultValue`) %>%
+  select(-`Date2021`)
+
+# Comments starting with ### are from volunteer, ## are from MR helping convert the original code to tidyr, # are from Ryan
+
+### Disables scientific notation
+options(scipen=999)
+
+### Bring in data on sampling locations (drainage area and USGS gages to use for flow estimation)
+# Add leading zero for USGS gages
+
+splza_gages_orig <- read_xlsx("data/Samplepalooza_gages.xlsx") %>%
+  mutate(Gage1 = ifelse(is.na(Gage1), NA_character_, 
+                        str_c("0", Gage1, sep="")),
+         Gage2 = ifelse(is.na(Gage2), NA_character_, 
+                        str_c("0", Gage2, sep=""))) %>%
+  select(-c("Name","Notes","Lat","Lon"))
+
+# Attach Gage and Dam IDs to Results
+splza_results_gages <- left_join(
+  splza_tidy,
+  splza_gages_orig,
+  by = "SiteID")
+
+results_gages_display <- splza_results_gages %>%
+  select(-c("Year", "SiteType", "State", "EcoRegion", "Lat", "Lon", "OtherFlowSource"))
+
+# Create list of gages and sample dates to pull from USGS database
+# readNWISdv is slow so reducing the number of queries as much as possible speeds up the following steps
+
+splza_gages_dates <- splza_results_gages %>%
+  select(c("SampleDate","Gage1","Gage2")) %>%
+  pivot_longer(cols = c("Gage1","Gage2"),
+    names_to = NULL,
+    values_to = "GageID") %>%
+  drop_na("GageID") %>%
+  distinct()
+
+# map streamflows from USGS for each date/gage combo
+# thanks to MR for simplifying this for me!
+
+gage_flows_by_date <-  purrr::map2_dfr(splza_gages_dates$GageID, splza_gages_dates$SampleDate,
+                     ~readNWISdv(siteNumbers=.x, 
+                                 parameterCd = "00060",
+                                 startDate = .y,
+                                 endDate = .y)) %>%
+  rename("GageID" = "site_no",
+         "daily_cfs" = "X_00060_00003") %>%
+  select(c("GageID", "Date", "daily_cfs")) %>%
+  tibble()
+
+# USGS gage drainage areas
+
+gages_only <- splza_gages_dates %>%
+  select("GageID") %>%
+  unique()
+
+gage_drainage <- purrr::map_dfr(gages_only$GageID,
+             ~readNWISsite(siteNumbers = .x)) %>%
+  rename("GageID" = "site_no",
+         "gage_drainage" = "drain_area_va") %>%
+  select(c("GageID", "gage_drainage")) %>%
+  tibble()
+
+# calculate cfsm (cubic feet per second per square mile)
+
+gages_cfsm <- left_join(
+  gage_flows_by_date,
+  gage_drainage,
+  by = "GageID") %>%
+  mutate("gage_daily_cfsm" = daily_cfs/gage_drainage) %>%
+  select(-c("daily_cfs", "gage_drainage"))
+
+# USACoE Dam Flow Data
+# Thanks to MR for initially taming this beast
+
+# Dates and Dam codes for inquiry
+
+splza_dams_dates <- splza_results_gages %>%
+select(c("SampleDate","USACOE_dam_id", "USACOE_dam_drainage")) %>%
+  drop_na("USACOE_dam_id") %>%
+  distinct()  
+
+### In some instances, two USGS gages were used and the values for each gage were averaged. When USACOE dams were used, the R script downloads the hourly inflow and outflow values, averages them to make a daily mean inflow and daily mean outflow, and then proceeds as if they were stream gage discharges.
+
+# function to read hourly dam outflow information and calculate average daily cfs
+
+dam_daily_cfs <-function(date, dam_id){  
+  url <- paste0("https://reservoircontrol.usace.army.mil/nae_ords/cwmsweb/cwms_web.apitable.table_display?gagecode=",dam_id,"&days=1&enddate=",format.Date(date,"%Y-%m-%d"),"&interval_hrs=1")
+  dam_html <- read_html(url)
+  dam_tables <- html_nodes(dam_html,"table")
+  dam_info_list <- html_table(dam_tables[2], fill = TRUE, header = TRUE, trim = TRUE)
+  dam_flow_tibble <- dam_info_list[[1]]
+  dam_daily_flow <- summarize(dam_flow_tibble, 
+                              "dam_daily_cfs" = mean(parse_number(dam_flow_tibble$`Flow(cfs)`))) %>%
+    mutate("SampleDate" = rep(date),
+           "USACOE_dam_id" = rep(dam_id))
+  
+  return(dam_daily_flow)
+}
+
+# calculate daily cfs
+
+dam_cfs <- purrr::map2_dfr(splza_dams_dates$SampleDate, splza_dams_dates$USACOE_dam_id,
+                          ~dam_daily_cfs(date = .x,
+                                        dam_id = .y))
+
+# calculate  dams daily cfsm
+
+dams_cfsm <- left_join(
+  splza_dams_dates,
+  dam_cfs,
+  by= c("USACOE_dam_id", "SampleDate")) %>%
+  mutate("dam_cfsm" = dam_daily_cfs/USACOE_dam_drainage) %>%
+  select(-c("USACOE_dam_drainage", "dam_daily_cfs"))
+
+# bind flows to results and estimate flows at site
+
+splza_est_flows <- left_join(
+  splza_results_gages,
+  gages_cfsm,
+  by = c("SampleDate" = "Date", "Gage1" = "GageID")) %>%
+  
+  rename("Gage1_cfsm" = gage_daily_cfsm) %>%
+  
+  left_join(
+    .,
+    gages_cfsm,
+    by = c("SampleDate" = "Date", "Gage2" = "GageID")) %>%
+  
+  rename("Gage2_cfsm" = gage_daily_cfsm) %>%
+  
+  left_join(
+    .,
+    dams_cfsm,
+    by = c("SampleDate", "USACOE_dam_id")) %>%
+  # Multiply cfsm by drainage
+  # 25-CNT has a special  calculation due to its location
+  # See notes on gages for reasoning
+  group_by(SiteID, SampleDate) %>%
+    mutate("Est_cfs" = case_when(
+       SiteID == "25-CNT" ~ (Gage1_cfsm * (Drainage_sq_mi - 221) + (Gage2_cfsm * 221)),
+       SiteID != "25-CNT" ~ (mean(c(Gage1_cfsm, Gage2_cfsm, dam_cfsm), na.rm = TRUE)) * Drainage_sq_mi)) %>%
+  ungroup() %>%
+  select(-c(Gage1:dam_cfsm))
+  
+### Calculate loading
+### Note: 5.393771 and 0.005394 are calculated conversion factors to result in pounds/day
+
+### mg_L_conversion_factor = mg/L * ft3/second * 28.3168 L/1 ft3 * 1 lb/453592 mg * 86400 second/1 day
+### ug_L_conversion_factor = mg/L * ft3/second * 28.3168 L/1 ft3 * 1 lb/453592370 ug * 86400 second/1 day
+
+mg_L_conversion_factor <- 5.393771
+ug_L_conversion_factor <- 0.005394
+
+splza_results_loading <- splza_est_flows %>%
+  mutate(
+    "Est_loading" = case_when(
+    str_detect(ResultUnit, "mg") ~ (Est_cfs * ResultValue * mg_L_conversion_factor),
+    str_detect(ResultUnit, "\u03bcg") ~ (Est_cfs * ResultValue * ug_L_conversion_factor)),
+    "Est_yield" = (Est_loading / Drainage_sq_mi)
+  )
+
+# EPA EcoRegion Thresholds
+
+ecVIII_tn <- 0.38
+ecXIV_tn <- 0.71
+ecVIII_tp <- 10
+ecXIV_tp <- 31.25
+
+# add in columns about meeting threshold
+
+splza_thresholds <- splza_results_loading %>%
+  mutate("Criteria" = case_when(
+    Parameter == "TN" & EcoRegion == "VIII" ~ ecVIII_tn,
+    Parameter == "TN" & EcoRegion == "XIV"  ~ ecXIV_tn,
+    Parameter == "TP" & EcoRegion == "VIII" ~ ecVIII_tp,
+    Parameter == "TP" & EcoRegion == "XIV"  ~ ecXIV_tp),
+    "Exceeds_criteria" = case_when(
+      ResultValue > Criteria ~ "Exceeds",
+      ResultValue <=Criteria ~ "Meets")
+  )
+### Set up visualizations
+
+# remove outliers
+
+splza_results_loading_no_outliers <- splza_thresholds %>%
+  filter((Parameter == "TP" & ResultValue < 150) | (Parameter == "Cl" & ResultValue < 100) | Parameter == "TN")
+
+# filter into mainstem and tributary datasets
+mainstem <- splza_results_loading_no_outliers %>%
+  filter(SiteType == "Mainstem") %>%
+  arrange(desc(Lat))
+
+tributary <- splza_results_loading_no_outliers %>%
+  filter(SiteType == "Tributary") %>%
+  arrange(desc(Lat))
+
+# create custom labels
+
+parameter_labs <- c(Cl = "Chloride\n(mg-Cl/L)", TN = "Total Nitrogen\n(mg-N/L)", TP = "Total Phosphorus\n(\U03BCg-P/L)")
+loading_labs <- c(Cl = "Chloride", TN = "Total Nitrogen", TP = "Total Phosphorus")
+
+```
+
+# Project Background
+
+Samplepalooza was an annual, one day, synoptic monitoring event throughout the entire Connecticut River Watershed. Teams of volunteers and professionals visited locations covering more than 1,000 river miles across four states. Samples are tested for the nutrients nitrogen and phosphorus. Chloride was also included in some years.
+
+Samplepalooza was a coordinated effort led by the Connecticut River Conservancy (CRC) to collect data in support of a multi-state effort working to reduce nitrogen pollution in Long Island Sound. Nitrogen from the Connecticut River and other rivers entering the Sound has been determined to be the cause of the anoxic "dead zone" documented by researchers in the Long Island Sound. Excess nitrogen causes large amounts of algae to grow. As the algae dies, it depletes the water of dissolved oxygen that is critical for aquatic wildlife. The states of Connecticut and New York have made many strides to reduce the amount of nutrients going into Long Island Sound. The upstream states find this project useful to help identify the primary areas of elevated nutrients in their watersheds.
+
+The strategy behind Sampleplaooza was to sample a large geographic area simultaneously, ideally a day with low flows and little precipitation in all four states. This approach would allow for more accurate comparisons to be made between samples while minimizing differences in weather and river flow variation---issues that usually complicate such studies. The project was designed to identify areas of the watershed that provide the largest sources of nutrients and contribute to the knowledgebase required for more accurate targeting of efforts to reduce nutrient impacts. Sampling locations were selected on the main stem of the Connecticut River and the downstream sections of its major tributaries and minor tributaries of concern. In the case of tidal tributaries, sites were usually selected above the tidal section to eliminate the need to sample on an outgoing tide.
+
+## Partners
+
+![The logos of the other organizations and agencies that participated in Samplepalooza](images/SamplepaloozaPartners.png){fig-align="center"}
+
+Sampling throughout the watershed is impossible for just one organization to do. A huge thank you to the [Black River Action Team](https://blackrivercleanup.wixsite.com/blackriveractionteam), [Chicopee 4 Rivers Watershed Council](https://c4rivers.org/), [Deerfield River Watershed Association](https://deerfieldriver.org/), [Eightmile River Wild & Scenic Watershed](https://www.eightmileriver.org/), [Farmington River Watershed Association](https://www.frwa.org/), [Fort River Watershed Association](http://fortriver.org/), [Friends of Lake Warner](https://friendsoflakewarner.org/), [New Hampshire Department of Environmental Services](https://www.des.nh.gov/), [Salmon River Watershed Partnership](https://www.salmonriverct.org/), [Scantic River Watershed Association](http://www.srwa.org/), [Southeastern Vermont Watershed Alliance](http://sevwa.org/), [Vermont Agency of Natural Resources](https://anr.vermont.gov/), [Vermont Association of Conservation Districts](https://www.vacd.org/), and [Woodard & Curran](https://www.woodardcurran.com/) for their participation in Samplepalooza over the years of the project.
+
+## History
+
+Samplepalooza was first held on August 6, 2014 as a collaboration between CRC, New Hampshire Department of Environmental Services (NH DES), and Vermont Department of Environmental Conservation (VT DEC). The following year, Yale University and the New England Interstate Water Pollution Control Commission (NEIWPCC) joined the effort and it was held on September 10, 2015. During the first two years, in an attempt to ensure low flow sampling throughout the watershed at all sites, several dates were selected by committee and decided 1-2 days out whether or not to sample. The project lost momentum after the first two years and was on hiatus until revived in 2018. We decided to move away from the committee model and to select the date ahead of time to simplify preparation and make it easier for everyone to participate fully. Samplepalooza was then held on September 20th, 2018, September 12th, 2019, September 17th, 2020, and concluded in 2021 on September 2nd & 14th.
+
+## Parameters
+
+::: panel-tabset
+### Nitrogen
+
+Total nitrogen (TN) tests for nitrogen in all its forms, including nitrate (NO3-), nitrite (NO2-), ammonium (NH4+), and as part of organic matter. Nitrogen is an essential nutrient for plants and can be found in the atmosphere as well as all living beings. It is also a key component of many fertilizers. An overabundance of nitrogen in our waterways can contribute to eutrophication (overgrowth of algae) and anoxia (lack of oxygen) in saltwater systems, such as Long Island Sound. Nitrogen levels can also contribute to eutrophication in freshwater systems that also have high phosphorus levels.
+
+### Phosphorus
+
+Total phosphorus (TP) tests for phosphorus in all its forms, including organic and inorganic phosphates (PO4-3). Organic phosphates are those that are bound to plant or animal tissue and formed primarily through biological processes, but they may occur from the breakdown of organic pesticides. Inorganic phosphates include orthophosphates, produced in natural processes and found in sewage, and polyphosphates, used in treating boiler waters and in detergents. An overabundance of phosphorus in our waterways can contribute to toxic algae blooms, eutrophication, and anoxia in freshwater systems, such as lakes and ponds. Phosphorus levels can also contribute to eutrophication in saltwater systems that also have high nitrogen levels.
+
+### Chloride
+
+Chlorides (Cl) are naturally found in both salt and fresh water environments. Chloride ions separate from chloride salts such as sodium chloride (table salt), potassium chloride or magnesium chloride. Concentrations of chlorides in the environment have increased sharply since the widespread adoption of using road salts as a deicer starting in the 1970s. Chlorides can also come from water softener discharge, wastewater effluent, fertilizers, or dust inhibitors used on dirt roads in the summer. Chloride concentrations tend to be higher in areas with lots of pavement and other treated surfaces. High chloride concentrations in fresh water systems can stress or kill aquatic plants and animals.
+:::
+
+## Why?
+
+::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
+![The Long Island Sound watershed.\
+Source: CFE/StS](images/watershed-map-long-island-sound-credit-CFEStS.png){width="300"}
+:::
+
+Nitrogen and phosphorus loading into lakes, rivers, estuaries, and wetlands can cause and/or contribute to water quality problems in many areas across the world. Excessive amounts of these nutrients can result in algae or vegetative blooms, benthic algal mats, slime layers on rocks, poor water clarity, aquatic habitat degradation for other plants and animals, and impairment of drinking water supplies. Nutrient effects such as eutrophication of downstream systems from upstream loads, human-health effects of excessive nutrient loads in water supplies, effects on recreational use and aesthetics, and impact on aquatic biota have all received national news attention. Recently, we have experienced an increased number of algae blooms in the Connecticut River and its tributaries each summer.
+
+The Connecticut River is the largest contributor of freshwater to the Long Island Sound (LIS). Excess nitrogen loading has been identified as the critical contributor to water quality impairments in Long Island Sound namely low dissolved oxygen (DO) levels, or hypoxia, To address the hypoxia, the Connecticut Department of Energy and Environmental Protection (CTDEEP) and New York State Department of Environmental Conservation (NYSDEC) developed a Total Maximum Daily Load (TMDL) that identified nitrogen loading reductions necessary to meet water quality standards in the Sound. The U.S. Environmental Protection Agency (EPA) approved the LIS TMDL in 2001. In 2005, EPA indicated that the out of basin (MA, VT, NH) load reduction targets had been met.
+
+![Frequency of hypoxia in Long Island Sound bottom waters (1994-2021)\
+Source: IEC/DEEP](images/frequency_IEC_DEEP_2021-2000x1545.jpg){fig-align="center" width="486"}
+
+In 2015, the Connecticut Fund for the Environment and other partner groups filed a petition with the EPA and state agencies to review, amend, or re-issue the Long Island Sound Total Maximum Daily Load (TMDL) because the 2001 TMDL efforts were not sufficient to meet water quality standards. EPA announced a new Nitrogen Reduction Strategy for Long Island Sound (LIS) in 2016. The US EPA intends to identify point source and nonpoint nitrogen reduction options based upon ecological thresholds developed using existing data from a variety of sources, including locations throughout the LIS watershed. However, there is significant concern that this data set is incomplete and not representative of sufficient locations and hydrologic conditions necessary to develop scientifically based nitrogen reduction targets.
+
+The data collected as part of Samplepalooza is intended to contribute to the body of knowledge that is used by EPA and other agencies to set ecological thresholds, loadings, and effluent limits for the Connecticut River watershed and assist the states that are in the process of updating their nutrient water quality standards. Finally, Samplepalooza brought together partners from throughout the watershed to form partnerships in anticipation of future efforts working across state lines to address water quality concerns.
+
+Chloride was sometimes included to take advantage of the widespread sampling event to also gain an understanding of how chloride levels compare across the region, especially during summer low flows when impacts of road salts are expected to be at their lowest.
+
+# Results
+
+## Project Map
+
+![](images/SPLZA-Map2.png){fig-align="center"}
+
+```{r}
+#| label: Site location table
+
+siteloc <- read_csv("data/FINAL Samplepalooza Site Locations.csv")
+
+site_table <- siteloc %>%
+  mutate("Lat, Lon" = paste(round(Lat, digits = 4),round(Lon, digits = 4), sep = ", "),
+         State = case_when(
+           State == "Vermont" ~ "VT",
+           State == "Massachusetts" ~ "MA",
+           State == "New Hampshire" ~ "NH",
+           State == "Connecticut" ~ "CT"
+         ),
+         "Map ID" = Key) %>%
+  select(c("Map ID", "Name", "State", "Site ID", "Lat, Lon"))
+
+gt(site_table) %>%
+  tab_header(title = "Sampling Location Details") %>%
+  tab_footnote(footnote = "Tributary sites keyed on map by numbers and mainstem sites by letters",
+               locations = cells_column_labels(columns = `Map ID`)) %>%
+  tab_footnote(footnote = "Site ID is the unique identifying code given to a site location by a monitoring organization",
+               locations = cells_column_labels(columns = `Site ID`)) %>%
+  cols_width(`Map ID` ~ px(90), Name ~ px(250), State ~ px(80)) %>%
+  opt_interactive(use_compact_mode = TRUE,
+                  use_highlight = TRUE,
+                  use_filters = TRUE,
+                  use_text_wrapping = FALSE)
+```
+
+There were a few additional sampling locations included in 2014 & 2015 as part of some other simultaneous data collection efforts, but those locations and their results were not included in this report because they did not meet the main criteria for Samplepalooza locations and were not sampled after 2015.
+
+## Results by Concentration
+
+The samples collected were tested for the concentration of each parameter and the results are presented as miligrams (mg) or micrograms (μg) per liter (L). Measuring concentrations can help us understand if a body of water is suitable for aquatic life. They do not always show the impact of each tributary on its receiving body of water (where the water next flows into, in this case either the Connecticut River or Long Island Sound).
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Ecoregions in the US\
+Source: US EPA](images/ecomap.gif){width="400"}
+:::
+
+There are two challenges with comparing nutrient (N & P) results across the entire Connecticut River watershed. The first is that the watershed is so large geographically that we would not expect to see the same natural background levels of nutrients throughout the entire region. That is, if there were no humans changing the land or altering the natural nutrient cycles, there would still be lower levels of nutrient concentrations as you go north and up elevation within the watershed, and higher levels as you move south and down in elevation. The other is that the watershed includes four different states, each with their own way of regulating whether a body of water is considered impaired or not. Some of these states have numeric criteria to compare results to, while others have narrative criteria that depends on a specific condition being caused by elevated nutrients (i.e. eutrophication) in order to consider a river "impaired".
+
+In the early 2000s, the US EPA released a series of ambient water quality recommendations for nutrient criteria by ecoregion. These recommendations are based on actual samples collected throughout each region. These are stringent, scientifically based, and consistent across state lines, so they are the criteria we are choosing to compare the results to. The Connecticut River watershed falls into two ecoregions: "VIII: Nutrient Poor Largely Glaciated Upper Midwest And Northeast" and "XIV: Eastern Coastal Plains." The recommendations for ecoregion VIII are 0.38 mg/L for TN and 10.00 µg/L for TP. The recommendations for ecoregion XIV are 0.71 mg/L for TN and 31.25 µg/L for TP. These thresholds are used in the charts below.
+
+On a final note, all of these samples are single grab samples. We acknowledge that they may not be fully representative of the larger bodies of water. The goal of this project is not to assess water, rather to provide a unique look at a watershed scale.
+
+### Charts
+
+::: panel-tabset
+#### Tributary Concentrations
+
+```{R fig.height = 12}
+#| label: visualization charts - tributary concentrations
+#| fig-cap: Samplepalooza Tributary Results
+
+thresholds <- tibble(
+  "EcoRegion" = c("VIII", "XIV", "VIII", "XIV"), 
+  "Parameter" = c("TN", "TN", "TP", "TP"),
+  "Threshold" = c(0.38, 0.71, 10, 31.25))
+
+ggplot(tributary, aes(y = fct_reorder(SiteName, Lat), x = ResultValue, fill = Year)) +
+  geom_col(color = "black", position = position_dodge2(preserve = "single")) +
+  scale_fill_viridis_d() +
+  labs(x = "Results", y = "Site Location") +
+  theme_light() +
+  facet_grid(cols = vars(Parameter), 
+             rows = vars(EcoRegion), 
+             scales = "free", 
+             labeller = labeller(Parameter = parameter_labs, EcoRegion = label_both)) +
+  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red") +
+  scale_linetype_manual(name = "", values = 2)
+```
+
+The chart above has the tributaries arranged from north to south within each EcoRegion with a dotted line to indicate the recommended EPA threshold for the indicated parameter. A reminder that there is no threshold for chloride within the range presented.
+
+Some notable standouts include Mink Brook, and the tributaries between the Westfield River and the Mattabasset River for chloride; Hall Stream, Clark Brook, the Scantic River and the Farmington River for nitrogen; and Johns River, Clark Brook, Fort River, Farmington River, and Park River for phosphorus.
+
+#### Mainstem Concentrations
+
+```{R}
+#| label: visualization charts - mainstem concentrations
+#| fig-cap: Samplepalooza Mainstem Results
+
+ggplot(mainstem, aes(y = fct_reorder(SiteName, Lat), x = ResultValue, fill = Year)) +
+  geom_col(color = "black", position = position_dodge2(preserve = "single")) +
+  scale_fill_viridis_d() +
+  labs(x = "Results", y = "Site Location") +
+  theme_light() +
+  facet_grid(cols = vars(Parameter), 
+             rows = vars(EcoRegion), 
+             scales = "free", 
+             labeller = labeller(Parameter = parameter_labs, EcoRegion = label_both)) +
+  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red") +
+  scale_linetype_manual(name = "", values = 2)
+  
+```
+The chart above has the mainstem sampling locations arranged from north to south within each EcoRegion with a dotted line to indicate the recommended EPA threshold for the indicated parameter. A reminder that there is no threshold for chloride within the range presented.
+
+We are unsure why the Thompsonville, CT, sample in 2021 came back so high for nitrogen, but there is no reason to suspect the sample as invalid. 
+
+:::
+
+### Maps
+
+Here is the same data from above presented on a map to show you the watershed of each tributary or the portion of the mainstem captured at each site:
+
+```{R}
+#| label: maps set up
+#| output: FALSE
+#| warning: FALSE
+
+# Watershed States
+watershed_states <- map_data("state") %>% 
+  filter(region %in% c("connecticut", "massachusetts", "vermont", "new hampshire")) %>% 
+           filter(!subregion %in% c("martha's vineyard", "nantucket"))
+# map files
+trib_map <- st_read("data/maps/Splza_tribs.shp") %>%
+  fortify() %>%
+  mutate(SiteID = str_trim(SiteID))
+
+mainstem_map <- st_read("data/maps/Splza_main.shp") %>%
+  fortify() %>%
+  mutate(SiteID = str_trim(SiteID))
+
+# join with data 
+trib_map_data <- splza_results_loading_no_outliers %>%
+   filter(SiteType == "Tributary") %>%
+  full_join(.,
+  trib_map,
+  by = c("SiteID" = "SiteID")) %>% #not sure why it made me do this, but just putting SiteID didn't work
+    st_as_sf()
+
+main_map_data <- splza_results_loading_no_outliers %>%
+   filter(SiteType == "Mainstem") %>%
+  full_join(.,
+  mainstem_map,
+  by = c("SiteID" = "SiteID")) %>%
+    st_as_sf()
+```
+
+::: panel-tabset
+#### Nitrogen
+
+::: panel-tabset
+##### Tributaries
+
+```{R}
+#| label: tn trib conc
+#| fig-cap: Tributary Nitrogen Concentrations by Year
+#| warning: FALSE
+
+filter(trib_map_data, Parameter == "TN") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue, color = Exceeds_criteria)) +
+  scale_fill_gradient(low = "white", high = "deepskyblue", limits = c(0,3), breaks = c(0, 0.38, 0.71, 3), name = "Total Nitrogen\n(mg/L)") +
+  scale_color_discrete(name = "EcoRegion Criteria") +
+  theme_void() +
+  facet_wrap(vars(Year))
+```
+
+##### Mainstem
+
+```{R}
+#| label: tn mainstem conc
+#| fig-cap: Mainstem Nitrogen Concentrations by Year
+#| warning: FALSE
+
+filter(main_map_data, Parameter == "TN") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue, color = Exceeds_criteria)) +
+  scale_fill_gradient(low = "white", high = "deepskyblue", limits = c(0,3), breaks = c(0, 0.38, 0.71, 3), name = "Total Nitrogen\n(mg/L)") +
+  scale_color_discrete(name = "EcoRegion Criteria") +
+  theme_void() +
+  facet_wrap(vars(Year))
+
+```
+
+:::
+
+#### Phosphorus
+
+::: panel-tabset
+##### Tributaries
+
+```{R}
+#| label: tp trib conc
+#| fig-cap: Tributary Phosphorus Concentrations by Year
+#| warning: FALSE
+
+filter(trib_map_data, Parameter == "TP") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue, color = Exceeds_criteria)) +
+scale_fill_gradient(low = "white", high = "darkorange", limits = c(0,130), breaks = c(0, 10, 31.25, 130), name = "Total Phosphorus\n(\u03bcg/L)") +
+  scale_color_discrete(name = "EcoRegion Criteria") +
+  theme_void() +
+  facet_wrap(vars(Year))
+```
+
+##### Mainstem
+
+```{R}
+#| label: tp mainstem conc
+#| fig-cap: Mainstem Phosphorus Concentrations by Year
+#| warning: FALSE
+
+filter(main_map_data, Parameter == "TP") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue, color = Exceeds_criteria)) +
+scale_fill_gradient(low = "white", high = "darkorange", limits = c(0,130), breaks = c(0, 10, 31.25, 130), name = "Total Phosphorus\n(\u03bcg/L)") +
+  scale_color_discrete(name = "EcoRegion Criteria") +
+  theme_void() +
+  facet_wrap(vars(Year))
+
+```
+:::
+
+#### Chloride
+
+::: panel-tabset
+##### Tributaries
+
+```{R}
+#| label: cl trib conc
+#| fig-cap: Tributary Chloride Concentrations by Year
+#| warning: FALSE
+
+filter(trib_map_data, Parameter == "Cl") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue)) +
+scale_fill_gradient(low = "white", high = "mediumorchid", limits = c(0,100), breaks = c(0, 10, 50, 100), name = "Chloride\n(mg/L)") +
+  theme_void() +
+  facet_wrap(vars(Year))
+```
+
+##### Mainstem
+
+```{R}
+#| label: cl mainstem conc
+#| fig-cap: Mainstem Chloride Concentrations by Year
+#| warning: FALSE
+
+filter(main_map_data, Parameter == "Cl") %>%
+ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  expand_limits(x = watershed_states$long, y = watershed_states$lat) +
+  scale_shape_identity() +
+  coord_map() +
+  geom_sf(aes(fill = ResultValue)) +
+  scale_fill_gradient(low = "white", high = "mediumorchid", limits = c(0,100), breaks = c(0, 10, 50, 100), name = "Chloride\n(mg/L)") +
+  theme_void() +
+  facet_wrap(vars(Year))
+
+```
+:::
+:::
+
+## Loading
+
+Tributaries aeach have different flows and watershed size and do not contribute equal amounts of water and therefore equal amounts of nutrients to the system by concentration. Concentration (amount per volume of water) can be multiplied by flow (volume of water per time unit) to get a loading value (amount per time unit) that allows a more accurate comparison of impact between tributaries. Loading values for the mainstem are not presented here due to the complex flow regime of a river that has both significant hydropower regulation and a long tidal portion.
+
+```{R fig.asp = 0.4}
+#| label: Concentration v loading
+#| fig-cap: Concentration versus Loading in Samplepalooza Tributaries
+#| warning: FALSE
+
+ggplot(tributary, aes(y = Est_loading, x = ResultValue, color = State)) +
+  geom_point() +
+  scale_color_viridis_d() +
+  labs(x = "Concentration", y = "Loading (lbs/day") +
+  theme_light() +
+  facet_wrap(vars(Parameter), 
+             scales = "free",
+             labeller = labeller(Parameter = loading_labs))
+
+```
+
+This graph shows the concentration versus the loading of each tributary sample. It is interesting to note that most of the sites with the highest loading of each parameter do not have the highest concentrations, especially with chloride. That is because the largest rivers may have lower concentrations due to dilution. That is why it is important to review not only concentration but also loading.
+
+If we wanted to direct restoration efforts on particular tributaries, those efforts should be targeted to watersheds that fall in the upper right quadrant of these graphs to have the biggest impact, since they are contributing the largest amount of the parameter to the system with the highest amount in each unit of water.
+
+### Tributary Loading
+
+```{r fig.height = 12}
+#| label: trib loading by area
+#| fig-cap: Tributary Loading by Watershed Size
+
+tributary %>%
+  group_by(SiteName, Parameter, Drainage_sq_mi, EcoRegion)%>%
+  summarise("Loading" = median(ResultValue)) %>%
+  ggplot(aes(y = fct_reorder(SiteName, Drainage_sq_mi), x = Loading, fill = Parameter)) +
+  geom_col(color = "black") +
+  scale_fill_manual(values = c("mediumorchid", "deepskyblue", "darkorange")) +
+  labs(x = "Estimated Loading (lbs/day)", y = "Site Location") +
+  theme_light() +
+  guides(fill = FALSE) +
+  facet_grid(cols = vars(Parameter), 
+             rows = vars(EcoRegion), 
+             scales = "free", 
+             labeller = labeller(Parameter = loading_labs, EcoRegion = label_both))
+
+```
+
+This chart is arranged by wastershed size instead of geographically; the largest watersheds are at the top of each EcoRegion panel. It presents only the median result, leaving out any exceptionally high or low results at each site and allows for easier comparison between rivers. With no human impacts affecting nutrient or chloride levels in a particular watershed, we would expect to see values decrease with watershed size and lower values in EcoRegion VIII compared to EcoRegion XIV. 
+
+Looking at the results in this way allows us to see which tributaries are contributing more than their "fair share" of each paramter. Some notable mentions include smaller watersheds are contributing in all three parameters. These tributaries were usually selected because they are in urban areas and so there was an interest in understanding what they were contributing. Smaller, rural tributaries were less likely to be accessible or of note to be included in this study. Also the Scantic River and the Farmington River stand out for nitrogen and phosphorus, respectively.
+
+### Tributary Loading by State
+
+One of the goals of Samplepalooza was to provide a snapshot image of the entire watershed. Just like a picture taken every year at any group gathering, each year is slightly different with different conditions and different tributaries present. You can take a closer look at what each tributary was contributing from each state in the treemaps below.
+
+Please note that the colors are not consistent for each state and that it's impossible to know what the tributaries that were not sampled in each state were contributing via loading. Please refer to the maps above to see the geographic extent sampled each year.
+
+The relative size of each box is determined by the estimated loading. Think of these charts as a square pie chart.
+
+::: panel-tabset
+#### Nitrogen
+
+::: panel-tabset
+##### 2014
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 14
+#| fig-cap: Tributary Loading by State - Nitrogen, 2014
+
+filter(tributary, Parameter == "TN", Year =="2014") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2015
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 15
+#| fig-cap: Tributary Loading by State - Nitrogen, 2015
+
+filter(tributary, Parameter == "TN", Year =="2015") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2018
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 18
+#| fig-cap: Tributary Loading by State - Nitrogen, 2018
+
+filter(tributary, Parameter == "TN", Year =="2018") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+Note: The sample date in 2018 was immediately after a large rainstorm in only the southern half of the region with extremely low flows in the north due to a drought.
+
+##### 2019
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 19
+#| fig-cap: Tributary Loading by State - Nitrogen, 2019
+
+filter(tributary, Parameter == "TN", Year =="2019") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2020
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 20
+#| fig-cap: Tributary Loading by State - Nitrogen, 2020
+
+filter(tributary, Parameter == "TN", Year =="2020") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2021
+
+```{R fig.asp = 1}
+#| label: TN loading treemap 21
+#| fig-cap: Tributary Loading by State - Nitrogen, 2021
+
+filter(tributary, Parameter == "TN", Year =="2021") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+:::
+
+#### Phosphorus
+
+::: panel-tabset
+##### 2014
+
+```{R fig.asp = 1}
+#| label: Tp loading treemap 14
+#| fig-cap: Tributary Loading by State - Phosphorus, 2014
+
+filter(tributary, Parameter == "TP", Year =="2014") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2015
+
+```{R fig.asp = 1}
+#| label: TP loading treemap 15
+#| fig-cap: Tributary Loading by State - Phosphorus, 2015
+
+filter(tributary, Parameter == "TP", Year =="2015") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2018
+
+```{R fig.asp = 1}
+#| label: TP loading treemap 18
+#| fig-cap: Tributary Loading by State - Phosphorus, 2018
+
+filter(tributary, Parameter == "TP", Year =="2018") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+Note: The sample date in 2018 was immediately after a large rainstorm in only the southern half of the region with extremely low flows in the north due to a drought.
+
+##### 2019
+
+```{R fig.asp = 1}
+#| label: TP loading treemap 19
+#| fig-cap: Tributary Loading by State - Phosphorus, 2019
+
+filter(tributary, Parameter == "TP", Year =="2019") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2020
+
+```{R fig.asp = 1}
+#| label: TP loading treemap 20
+#| fig-cap: Tributary Loading by State - Phosphorus, 2020
+
+filter(tributary, Parameter == "TP", Year =="2020") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2021
+
+```{R fig.asp = 1}
+#| label: TP loading treemap 21
+#| fig-cap: Tributary Loading by State - Phosphorus, 2021
+
+filter(tributary, Parameter == "TP", Year =="2021") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+:::
+
+#### Chloride
+
+::: panel-tabset
+##### 2014
+
+```{R fig.asp = 1}
+#| label: cl loading treemap 14
+#| fig-cap: Tributary Loading by State - Chloride, 2014
+
+filter(tributary, Parameter == "Cl", Year =="2014") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2015
+
+```{R fig.asp = 1}
+#| label: cl loading treemap 15
+#| fig-cap: Tributary Loading by State - Chloride, 2015
+
+filter(tributary, Parameter == "Cl", Year =="2015") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2020
+
+```{R fig.asp = 1}
+#| label: cl loading treemap 20
+#| fig-cap: Tributary Loading by State - Chloride, 2020
+
+filter(tributary, Parameter == "Cl", Year =="2020") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+
+##### 2021
+
+```{R fig.asp = 1}
+#| label: cl loading treemap 21
+#| fig-cap: Tributary Loading by State - Chloride, 2021
+
+filter(tributary, Parameter == "Cl", Year =="2021") %>%
+treemap(., 
+  index = c("State", "SiteName"), 
+  vSize = "Est_loading", 
+  type = "index",
+  palette = "Accent",
+  title = "",
+  border.col = c("black", "gray"),
+  bg.labels = 50,
+  align.labels = list(c("left", "top"), c("center", "center")),
+  fontface.labels = c("bold", "plain"))
+
+```
+:::
+:::
+
+# Conclusion
+
+Samplepalooza was a successful project in collecting data to help understand the Connecticut River watershed on broad scale as well as an incredible exercise in collaboration across state lines. Since Samplepalooza started in 2014, regional efforts to monitor for and accurately model nitrogen contributions from throughout the watershed and to Long Island Sound have greatly increased and the usefulness of a single day monitoring event in contributing to the great body of knowledge has waned. While this iteration of Samplepalooza has concluded, we are excited to be launching a regional nitrogen monitoring program in the summer of 2024 to focus on getting a more clear understanding of less frequently monitoring tributaries, find and protect high quality waters, and bracket and track potential nitrogen sources. While the focus is on nitrogen due to Long Island Sound, any nitrogen reduction projects would ideally also reduce phosphorus and other runoff contributions.
+
+Chloride monitoring was a secondary objective of Samplepalooza and is something that is of increasing interest to CRC and our constituents. As of this report, there is no concrete plan to increase chloride monitoring but it is being considered. 
+
+
+# Full Results
+
+```{r}
+#| label: full results table
+
+resultsdisplay <- splza_results_loading_no_outliers %>%
+  select(c(SiteType, SiteName, SampleDate, SampleDate, ResultValue, ResultUnit, EcoRegion, Exceeds_criteria, Est_cfs, Est_loading, SiteID)) %>%
+  mutate(Est_cfs = paste(round(Est_cfs, digits = 2)),
+         Est_loading = paste(round(Est_loading, digits = 2)))
+
+gt(resultsdisplay) %>%
+  tab_header(title = "Full Results") %>%
+  cols_width(SiteName ~ px(250), Est_loading~ px(150), SiteID ~ px(200)) %>%
+  cols_label(
+    SiteType = "Site Type",
+    SiteName = "Site Name",
+    SampleDate = "Date",
+    ResultValue = "Result",
+    ResultUnit = "Unit",
+    Exceeds_criteria = "Meets ER Criteria?",
+    Est_cfs = "Estimated flow (cfs)",
+    Est_loading = "Estimated loading (lbs/day)",
+    SiteID = "Site ID"
+  ) %>%
+  opt_interactive(use_compact_mode = TRUE,
+                  use_highlight = TRUE,
+                  use_filters = TRUE,
+                  use_text_wrapping = TRUE,
+                  page_size_default = 25)
+```
