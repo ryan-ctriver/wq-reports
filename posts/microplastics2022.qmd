@@ -1,0 +1,248 @@
+---
+title: "Volunteer Monitoring for Microplastics in the Connecticut River"
+author: "Ryan O'Donnell"
+date: "2/1/2023"
+format: html
+editor: visual
+echo: FALSE
+categories:
+  - Microplastics
+  - 2021
+  - 2022
+---
+
+```{R}
+#| label: Set-up
+#| include: FALSE
+
+# Library Setup
+library(tidyverse)
+library(lubridate)
+library(readxl)
+
+# CRC Palette
+crcblue <- "#006E9C"
+crcgreen <- "#007D1E"
+crcltblue <- "#5ECCF3"
+crcskyblue <- "#DEF4FC"
+crctan <- "#F0DEBA"
+crcgray <- "#8C8279"
+crcorange <- "#FF8021"
+crcred <- "#F14124"
+
+crc_palette <- c(crcblue, crcorange, crcltblue, crcgreen, crcskyblue, crctan, crcgray, crcred)
+
+# Data Import
+
+filename <- "_data/21_22MP-02072023.xlsx"
+
+results_orig <- read_xlsx(
+  filename,
+  sheet = 1,
+  na = "NA"
+) %>% filter(
+  !is.na(`Observation Number`)
+)
+
+locations_orig <- read_xlsx(
+  filename,
+  sheet = 2
+)
+
+precip_orig <- read_xlsx(
+  filename,
+  sheet = 3
+) %>% pivot_longer(
+    cols = c("VT":"CT"),
+    names_to = "Precip Region",
+    values_to = "48 hr Rainfall"
+  )
+
+# Data Consolidation
+
+results_consolidated <- results_orig %>%
+  filter(!str_detect(`Sample ID`, "FD|FB|LB")) %>%
+  left_join(
+  x = .,
+  y = locations_orig,
+  by = c("Sample ID" = "Site ID")
+) %>% left_join(
+  x - .,
+  y = precip_orig,
+  by = c("Precip Region", "Date Collected" = "Date")
+) %>%
+  mutate(
+    `Date Label` = paste(month(`Date Collected`, label = TRUE), year(`Date Collected`))
+  )
+```
+
+## Project Overview
+
+Connecticut River Conservancy (CRC) has been piloting a volunteer microplastics monitoring program in the Connecticut River watershed. CRC holds a watershed wide trash cleanup each year and our River Stewards work in each state to "stop trash before it starts" by advocating for legislation like bottle bills and extended producer responsibility. There was no existing data about plastic's impact on our waterways to support this advocacy work. Our members have also expressed interest in understanding how emerging contaminants, such as microplastics, are present in the Connecticut River watershed. We have been working over the past two years to develop a program that engages volunteers and starts to fill this knowledge gap in a responsible way.
+
+## Challenges
+
+-   Microplastics are pervasive in our environments and preventing contamination is too challenging/costly for a grassroots volunteer program
+-   Field and lab blanks confirm minor contamination is occurring
+-   No established Standard Operating Procedure for volunteer monitoring of microplastics in rivers has required us to develop our own and adjust as we learn
+-   Some opposition received from university level professionals who are skeptical of the value of volunteer level data in the field of microplastics
+-   Algae clogs our filters! We are working out ways to preserve our samples better before filtering
+
+## Successes
+
+-   We can definitively say that our local waters are contaminated with microplastics!
+-   Volunteers are excited to be contributing to local research of microplastics
+-   Analysis can occur during the winter months when our lab is not otherwise in use
+-   In Year 2, we were able to adapt a procedure developed at Staffordshire University using forensic tape to fix filter to slides so the slides can be reviewed more than once
+-   We will be developing the training procedure for volunteers to take over the reading of the results this spring
+
+## Results and Discussion
+
+For this project, volunteers collected two samples each in 2021 and 2022 from the 13 sites pictured on the map below. Most sites were located on the mainstem Connecticut River. We also collected from 2 major tributaries, the Deerfield and West Rivers, and selected a remote headwater location in the HO Cook State Forest in Heath, MA. A few of our 2022 samples froze in our fridge and broke, so we unfortunately lost four samples. Thankfully, each of the samples that froze was from a different site, so we have at least one observation from every site for each year.
+
+![Sampling Location Map](_images/MPSiteMap21.png)
+
+In the lab, we filtered samples using a vacuum pump and looked at the filters under a microscope. In 2021, filters were examined while still wet. In 2022, we fixed the filters to slides using forensic tape (think dusting for fingerprints...). Fixing the filters to the slide allows for the same exact view under the microscope for multiple viewers. It is our goal to have volunteers do the lab analysis as well, and using this technique gets us one step closer.
+
+::: {layout-ncol="2"}
+![Filtering a sample in the lab](_images/image-1744518717.png)
+
+![Filters mounted on slides with tape](_images/image-1430518754.png)
+:::
+
+The lab analysists recorded each individual microplastic observed and classified it by type, size, and color. We found microplastics in every sample collected! The most common type of microplastic was fiber, most common size category was "Small Microplastic" (under 1 mm), and the most common color was blue. Another prominent type of microplastic of note was transparent filaments that we attribute primarily to small pieces of fishing line. Below are a series of charts that show what we found.
+
+```{R}
+#| label: mp-size-type-color
+results_consolidated %>%
+  mutate("Dimension" = rowMeans(select(., c("Length":"Diameter")), na.rm = TRUE),
+         `Dimension`= case_when(
+           `Unit` == "mm" ~ (`Dimension` * 1000),
+           TRUE ~ `Dimension`
+        )
+         )%>%
+ggplot(aes(x = `Dimension`, fill = `Color`)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() +
+  scale_fill_manual(name = "", values = c("Black" = "black", 
+                                          "Grey/Silver" = "gray80",
+                                          "White" = "white",
+                                          "Transparent" = "powderblue",
+                                          "Red" = "red",
+                                          "Orange" = "orange",
+                                          "Yellow" = "yellow",
+                                          "Green" = "green",
+                                          "Blue" = "blue",
+                                          "Purple" = "purple",
+                                          "Pink" = "pink",
+                                          "Multicolor" = "gray40",
+                                          "Other" = "gray20")) +
+  facet_wrap(vars(`MP Type`)) +
+  labs(x = "Size (\U03BCm)", y = "Count", title = "Microplastic Size Distribution by Type and Color") +
+  theme(plot.title = element_text(size = 20),
+        legend.text = element_text(size = 10),
+        axis.text.x = element_text(size = 8),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        plot.background = element_rect(colour = "black", fill=NA, size=1)
+  )
+  
+```
+
+First, we have a look at the overall distribution of all the microplastics observed in all samples classified by type, size, and color. We can see that the majority of samples were fibers and that most of those were blue.
+
+```{R fig.height = 7}
+#| label: mp-type
+type_counts <- results_consolidated %>%
+  count(`Site Name`, `Date Collected`, `Date Label`, `MP Type`)
+
+ggplot(type_counts, aes(x = fct_reorder(`Date Label`, `Date Collected`), y = `n`, fill = `MP Type`)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(vars(`Site Name`), scales = "free_x", labeller = labeller(`Site Name` = label_wrap_gen(width = 14))) +
+  scale_fill_manual(name = "", values = crc_palette) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  labs(x = NULL, y = "Number of Microplastics", title = "Microplastic Abundance by Type") +
+  theme(plot.title = element_text(size = 20),
+        legend.text = element_text(size = 10),
+        axis.text.x = element_text(size = 8),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "bottom",
+        plot.background = element_rect(colour = "black", fill=NA, size=1)
+        )
+```
+
+Here we have the distribution of five types at each site and sample. Refer to the map above to remind yourself where each site is located. The number of microplastics was variable at each site. Something of note is that it seems to be that sometimes a particular type other than fiber was found in greater numbers indicated a specific item like a piece of rope or styrofoam was degrading at the site.
+
+```{R fig.height = 7}
+
+#| label: mp-color
+color_counts <- results_consolidated %>%
+  count(`Site Name`, `Date Collected`, `Date Label`, `Color`)
+
+ggplot(color_counts, aes(x = fct_reorder(`Date Label`, `Date Collected`), y = `n`, fill = fct_reorder(`Color`, `n`, .fun = sum))) +
+  geom_bar(stat = "identity") +
+  facet_wrap(vars(`Site Name`), scales = "free_x", labeller = labeller(`Site Name` = label_wrap_gen())) +
+  scale_fill_manual(name = "", values = c("Black" = "black", 
+                               "Grey/Silver" = "gray80",
+                               "White" = "white",
+                               "Transparent" = "powderblue",
+                               "Red" = "red",
+                               "Orange" = "orange",
+                               "Yellow" = "yellow",
+                               "Green" = "green",
+                               "Blue" = "blue",
+                               "Purple" = "purple",
+                               "Pink" = "pink",
+                               "Multicolor" = "gray40",
+                               "Other" = "gray20")) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  labs(x = NULL, y = "Number of Microplastics", title = "Microplastic Abundance by Color") +
+  theme(plot.title = element_text(size = 20),
+        legend.text = element_text(size = 10),
+        axis.text.x = element_text(size = 8),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "bottom",
+        plot.background = element_rect(colour = "black", fill=NA, size=1)
+  )
+```
+
+Here we can see the distribution of colors found at each site and sample. As the first graph suggested, blue is the dominant color found across all the samples.
+
+```{R}
+#| label: mp-colortype
+colors_by_type <- results_consolidated %>% count(`MP Type`, `Color`)
+
+ggplot(colors_by_type, aes(x = `MP Type`, y = `n`, fill = fct_reorder(`Color`, `n`, .fun = sum))) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(name = "", values = c("Black" = "black", 
+                                                 "Grey/Silver" = "gray80",
+                                                 "White" = "white",
+                                                 "Transparent" = "powderblue",
+                                                 "Red" = "red",
+                                                 "Orange" = "orange",
+                                                 "Yellow" = "yellow",
+                                                 "Green" = "green",
+                                                 "Blue" = "blue",
+                                                 "Purple" = "purple",
+                                                 "Pink" = "pink",
+                                                 "Multicolor" = "gray40",
+                                                 "Other" = "gray20")) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  labs(x = NULL, y = "% of Total", title = "Microplastic Color Proportions by Type") +
+  theme(plot.title = element_text(size = 20),
+        legend.text = element_text(size = 10),
+        axis.text.x = element_text(size = 8),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "bottom",
+        plot.background = element_rect(colour = "black", fill=NA, size=1)
+  )
+```
+
+Here is a closer look at the proportions of different colors found in each of the types of microplastic. We noticed that the most likely color of filament or rope was transparent and it is likely due to bits of fishing line. We also found that foams were dominated by white, which is likely from styrofoam.
+
+## Conclusion
+
+After two years of this program, we have found it valuable to have data on how microplastics are affecting us locally in the Connecticut River watershed. We plan to continue this program, perhaps expand our research to different research questions, and use this data to support our advocacy work around trash and plastics.
