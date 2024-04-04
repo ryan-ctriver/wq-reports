@@ -1,0 +1,29 @@
+### `r .year`
+
+```{r}
+#|echo: false
+
+graph <- yearly_bact %>%
+  filter(Year == .year) %>%
+  ggplot() +
+  geom_col_interactive(aes(x = SampleWeek, y = ResultValue, fill = WeatherStatus, tooltip = Label, data_id = Date)) +
+  scale_fill_manual(values = c("#117733" , "#88CCEE"), name = "Weather") +
+  geom_hline(aes(yintercept = swimming, linetype = "Swimming"), color = "#DDCC77", size = 1) +
+  geom_hline(aes(yintercept = boating, linetype = "Boating"), color = "#882255", size = 1) +
+  scale_linetype_manual(name = "Thresholds", values = c(2,3)) +
+  labs(title = "*E. coli* Results by Sampling Location",
+       subtitle = .year,
+       y = "Number *E. coli* (MPN 100/mL)",
+       x = "Sampling Week") +
+  theme_light() +
+  theme(title = ggtext::element_markdown(),
+        axis.title.y = ggtext::element_markdown()) +
+  facet_wrap(facets = vars(fct_reorder(`Chart Name`, Mile, .desc = TRUE)))
+
+widget <- girafe(ggobj = graph, options = list(
+  opts_hover(css = "stroke:#000000;stroke-width;0.2;"), 
+  opts_hover_inv(css = "opacity:0.5;")))
+
+widget
+
+```

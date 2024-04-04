@@ -2,7 +2,9 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/data/maps/ctr-mainstem-line.html",
       "/posts/data/maps/Splza_main.html",
+      "/posts/EC-Mainstem-21_23.html",
       "/posts/Samplepalooza-Final.html",
       "/posts/MP-blog-post.html"
     ]
