@@ -294,7 +294,7 @@ The strategy behind Samplepalooza was to sample a large geographic area simultan
 
 ## Partners
 
-![The logos of the other organizations and agencies that participated in Samplepalooza](_images/SamplepaloozaPartners.png){fig-align="center"}
+![The logos of the other organizations and agencies that participated in Samplepalooza](images/SamplepaloozaPartners.png){fig-align="center"}
 
 Sampling throughout the watershed is impossible for just one organization to do. A huge thank you to the [Black River Action Team](https://blackrivercleanup.wixsite.com/blackriveractionteam), [Chicopee 4 Rivers Watershed Council](https://c4rivers.org/), [Deerfield River Watershed Association](https://deerfieldriver.org/), [Eightmile River Wild & Scenic Watershed](https://www.eightmileriver.org/), [Farmington River Watershed Association](https://www.frwa.org/), [Fort River Watershed Association](http://fortriver.org/), [Friends of Lake Warner](https://friendsoflakewarner.org/), [New Hampshire Department of Environmental Services](https://www.des.nh.gov/), [Salmon River Watershed Partnership](https://www.salmonriverct.org/), [Scantic River Watershed Association](http://www.srwa.org/), [Southeastern Vermont Watershed Alliance](http://sevwa.org/), [Vermont Agency of Natural Resources](https://anr.vermont.gov/), [Vermont Association of Conservation Districts](https://www.vacd.org/), and [Woodard & Curran](https://www.woodardcurran.com/) for their participation in Samplepalooza over the years of the project.
 
@@ -322,7 +322,7 @@ Chlorides (Cl) are naturally found in both salt and fresh water environments. Ch
 
 ::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
 ![The Long Island Sound watershed.\
-Source: CFE/StS](_images/watershed-map-long-island-sound-credit-CFEStS.png){width="300"}
+Source: CFE/StS](images/watershed-map-long-island-sound-credit-CFEStS.png){width="300"}
 :::
 
 Nitrogen and phosphorus loading into lakes, rivers, estuaries, and wetlands can cause and/or contribute to water quality problems in many areas across the world. Excessive amounts of these nutrients can result in algae or vegetative blooms, benthic algal mats, slime layers on rocks, poor water clarity, aquatic habitat degradation for other plants and animals, and impairment of drinking water supplies. Nutrient effects such as eutrophication of downstream systems from upstream loads, human-health effects of excessive nutrient loads in water supplies, effects on recreational use and aesthetics, and impact on aquatic biota have all received national news attention. Recently, we have experienced an increased number of algae blooms in the Connecticut River and its tributaries each summer.
@@ -330,7 +330,7 @@ Nitrogen and phosphorus loading into lakes, rivers, estuaries, and wetlands can 
 The Connecticut River is the largest contributor of freshwater to the Long Island Sound (LIS). Excess nitrogen loading has been identified as the critical contributor to water quality impairments in Long Island Sound, namely low dissolved oxygen (DO) levels, or hypoxia. To address the hypoxia, the Connecticut Department of Energy and Environmental Protection (CTDEEP) and New York State Department of Environmental Conservation (NYSDEC) developed a Total Maximum Daily Load (TMDL) that identified nitrogen loading reductions necessary to meet water quality standards in the Sound. The U.S. Environmental Protection Agency (EPA) approved the LIS TMDL in 2001. In 2005, EPA indicated that the out of basin (MA, VT, NH) load reduction targets had been met.
 
 ![Frequency of hypoxia in Long Island Sound bottom waters (1994-2021)\
-Source: IEC/DEEP](_images/frequency_IEC_DEEP_2021-2000x1545.jpg){fig-align="center" width="486"}
+Source: IEC/DEEP](images/frequency_IEC_DEEP_2021-2000x1545.jpg){fig-align="center" width="486"}
 
 In 2015, the Connecticut Fund for the Environment and other partner groups filed a petition with the EPA and state agencies to review, amend, or re-issue the Long Island Sound Total Maximum Daily Load (TMDL) because the 2001 TMDL efforts were not sufficient to meet water quality standards. EPA announced a new Nitrogen Reduction Strategy for Long Island Sound (LIS) in 2016. The US EPA intends to identify point source and nonpoint nitrogen reduction options based upon ecological thresholds developed using existing data from a variety of sources, including locations throughout the LIS watershed. However, there is significant concern that this data set is incomplete and not representative of sufficient locations and hydrologic conditions necessary to develop scientifically based nitrogen reduction targets.
 
@@ -342,7 +342,7 @@ Chloride was sometimes included to take advantage of the widespread sampling eve
 
 ## Project Map
 
-![](_images/SPLZA-Map2.png){fig-align="center"}
+![](images/SPLZA-Map2.png){fig-align="center"}
 
 ```{r}
 #| label: Site location table
@@ -381,7 +381,7 @@ The samples collected were tested for the concentration of each parameter and th
 
 ::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
 ![Ecoregions in the US\
-Source: US EPA](_images/ecomap.gif){width="400"}
+Source: US EPA](images/ecomap.gif){width="400"}
 :::
 
 There are two challenges with comparing nutrient (N & P) results across the entire Connecticut River watershed. The first is that the watershed is so large geographically that we would not expect to see the same natural background levels of nutrients throughout the entire region. That is, if there were no humans changing the land or altering the natural nutrient cycles, there would still be lower levels of nutrient concentrations as you go north and up in elevation within the watershed, and higher levels as you move south and down in elevation. The other challenge is that the watershed includes four different states, each with their own way of regulating whether a body of water is considered impaired or not. Some of these states have numeric criteria to compare results to, while others have narrative criteria that depends on a specific condition being caused by elevated nutrients (i.e. eutrophication) in order to consider a river "impaired."
