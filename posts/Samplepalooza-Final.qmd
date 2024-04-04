@@ -15,6 +15,14 @@ categories:
   - Chloride
   - Nitrogen
   - Phosphorus
+  - Mainstem
+  - Tributaries
+  - 2014
+  - 2015
+  - 2018
+  - 2019
+  - 2020
+  - 2021
 ---
 
 ```{R}
@@ -31,7 +39,6 @@ library(rvest)
 library(sf)
 library(gt)
 library(treemap)
-library(d3Tree)
 ```
 
 ```{R}
@@ -279,11 +286,11 @@ loading_labs <- c(Cl = "Chloride", TN = "Total Nitrogen", TP = "Total Phosphorus
 
 # Project Background
 
-Samplepalooza was an annual, one day, synoptic monitoring event throughout the entire Connecticut River Watershed. Teams of volunteers and professionals visited locations covering more than 1,000 river miles across four states. Samples are tested for the nutrients nitrogen and phosphorus. Chloride was also included in some years.
+Samplepalooza was an annual, one day, synoptic monitoring event throughout the entire Connecticut River Watershed. Teams of volunteers and professionals visited locations covering more than 1,000 river miles across four states. Samples were tested for the nutrients nitrogen and phosphorus. Chloride was also included in some years.
 
 Samplepalooza was a coordinated effort led by the Connecticut River Conservancy (CRC) to collect data in support of a multi-state effort working to reduce nitrogen pollution in Long Island Sound. Nitrogen from the Connecticut River and other rivers entering the Sound has been determined to be the cause of the anoxic "dead zone" documented by researchers in the Long Island Sound. Excess nitrogen causes large amounts of algae to grow. As the algae dies, it depletes the water of dissolved oxygen that is critical for aquatic wildlife. The states of Connecticut and New York have made many strides to reduce the amount of nutrients going into Long Island Sound. The upstream states find this project useful to help identify the primary areas of elevated nutrients in their watersheds.
 
-The strategy behind Sampleplaooza was to sample a large geographic area simultaneously, ideally a day with low flows and little precipitation in all four states. This approach would allow for more accurate comparisons to be made between samples while minimizing differences in weather and river flow variation---issues that usually complicate such studies. The project was designed to identify areas of the watershed that provide the largest sources of nutrients and contribute to the knowledgebase required for more accurate targeting of efforts to reduce nutrient impacts. Sampling locations were selected on the main stem of the Connecticut River and the downstream sections of its major tributaries and minor tributaries of concern. In the case of tidal tributaries, sites were usually selected above the tidal section to eliminate the need to sample on an outgoing tide.
+The strategy behind Samplepalooza was to sample a large geographic area simultaneously, ideally a day with low flows and little precipitation in all four states. This approach would allow for more accurate comparisons to be made among samples while minimizing differences in weather and river flow variation---issues that usually complicate such studies. The project was designed to identify areas of the watershed that provide the largest sources of nutrients and contribute to the knowledge base required for more accurate targeting of efforts to reduce nutrient impacts. Sampling locations were selected on the main stem of the Connecticut River and the downstream sections of its major tributaries and minor tributaries of concern. In the case of tidal tributaries, sites were usually selected above the tidal section to eliminate the need to sample on an outgoing tide.
 
 ## Partners
 
@@ -293,7 +300,7 @@ Sampling throughout the watershed is impossible for just one organization to do.
 
 ## History
 
-Samplepalooza was first held on August 6, 2014 as a collaboration between CRC, New Hampshire Department of Environmental Services (NH DES), and Vermont Department of Environmental Conservation (VT DEC). The following year, Yale University and the New England Interstate Water Pollution Control Commission (NEIWPCC) joined the effort and it was held on September 10, 2015. During the first two years, in an attempt to ensure low flow sampling throughout the watershed at all sites, several dates were selected by committee and decided 1-2 days out whether or not to sample. The project lost momentum after the first two years and was on hiatus until revived in 2018. We decided to move away from the committee model and to select the date ahead of time to simplify preparation and make it easier for everyone to participate fully. Samplepalooza was then held on September 20th, 2018, September 12th, 2019, September 17th, 2020, and concluded in 2021 on September 2nd & 14th.
+Samplepalooza was first held on August 6, 2014 as a collaboration between CRC, New Hampshire Department of Environmental Services (NH DES), and Vermont Department of Environmental Conservation (VT DEC). The following year, Yale University and the New England Interstate Water Pollution Control Commission (NEIWPCC) joined the effort and it was held on September 10, 2015. During the first two years, in an attempt to ensure low flow sampling throughout the watershed at all sites, several dates were selected by the committee, and a final decision on sampling was made one to two days out based on weather predictions and recent flows. The project lost momentum after the first two years and was on hiatus until revived in 2018. We decided to move away from the committee model and to select the date ahead of time to simplify preparation and make it easier for everyone to participate fully. Samplepalooza was then held on September 20th, 2018, September 12th, 2019, September 17th, 2020, and concluded in 2021. We decided not to continue this project after 2021 with the knowledge that the United States Geological Survey (USGS) and several state agencies are working to thoroughly characterize nutrient contributions throughout the Connecticut River watershed in a more thorough and detailed way than our yearly snapshot every could.
 
 ## Parameters
 
@@ -308,7 +315,7 @@ Total phosphorus (TP) tests for phosphorus in all its forms, including organic a
 
 ### Chloride
 
-Chlorides (Cl) are naturally found in both salt and fresh water environments. Chloride ions separate from chloride salts such as sodium chloride (table salt), potassium chloride or magnesium chloride. Concentrations of chlorides in the environment have increased sharply since the widespread adoption of using road salts as a deicer starting in the 1970s. Chlorides can also come from water softener discharge, wastewater effluent, fertilizers, or dust inhibitors used on dirt roads in the summer. Chloride concentrations tend to be higher in areas with lots of pavement and other treated surfaces. High chloride concentrations in fresh water systems can stress or kill aquatic plants and animals.
+Chlorides (Cl) are naturally found in both salt and fresh water environments. Chloride ions separate from chloride salts, such as sodium chloride (table salt), potassium chloride, or magnesium chloride. Concentrations of chlorides in the environment have increased sharply since the widespread adoption of using road salts as a deicer starting in the 1970s. Chlorides can also come from water softener discharge, wastewater effluent, fertilizers, or dust inhibitors used on dirt roads in the summer. Chloride concentrations tend to be higher in areas with lots of pavement and other treated surfaces. High chloride concentrations in freshwater systems can stress or kill aquatic plants and animals.
 :::
 
 ## Why?
@@ -320,7 +327,7 @@ Source: CFE/StS](images/watershed-map-long-island-sound-credit-CFEStS.png){width
 
 Nitrogen and phosphorus loading into lakes, rivers, estuaries, and wetlands can cause and/or contribute to water quality problems in many areas across the world. Excessive amounts of these nutrients can result in algae or vegetative blooms, benthic algal mats, slime layers on rocks, poor water clarity, aquatic habitat degradation for other plants and animals, and impairment of drinking water supplies. Nutrient effects such as eutrophication of downstream systems from upstream loads, human-health effects of excessive nutrient loads in water supplies, effects on recreational use and aesthetics, and impact on aquatic biota have all received national news attention. Recently, we have experienced an increased number of algae blooms in the Connecticut River and its tributaries each summer.
 
-The Connecticut River is the largest contributor of freshwater to the Long Island Sound (LIS). Excess nitrogen loading has been identified as the critical contributor to water quality impairments in Long Island Sound namely low dissolved oxygen (DO) levels, or hypoxia, To address the hypoxia, the Connecticut Department of Energy and Environmental Protection (CTDEEP) and New York State Department of Environmental Conservation (NYSDEC) developed a Total Maximum Daily Load (TMDL) that identified nitrogen loading reductions necessary to meet water quality standards in the Sound. The U.S. Environmental Protection Agency (EPA) approved the LIS TMDL in 2001. In 2005, EPA indicated that the out of basin (MA, VT, NH) load reduction targets had been met.
+The Connecticut River is the largest contributor of freshwater to the Long Island Sound (LIS). Excess nitrogen loading has been identified as the critical contributor to water quality impairments in Long Island Sound, namely low dissolved oxygen (DO) levels, or hypoxia. To address the hypoxia, the Connecticut Department of Energy and Environmental Protection (CTDEEP) and New York State Department of Environmental Conservation (NYSDEC) developed a Total Maximum Daily Load (TMDL) that identified nitrogen loading reductions necessary to meet water quality standards in the Sound. The U.S. Environmental Protection Agency (EPA) approved the LIS TMDL in 2001. In 2005, EPA indicated that the out of basin (MA, VT, NH) load reduction targets had been met.
 
 ![Frequency of hypoxia in Long Island Sound bottom waters (1994-2021)\
 Source: IEC/DEEP](images/frequency_IEC_DEEP_2021-2000x1545.jpg){fig-align="center" width="486"}
@@ -370,14 +377,14 @@ There were a few additional sampling locations included in 2014 & 2015 as part o
 
 ## Results by Concentration
 
-The samples collected were tested for the concentration of each parameter and the results are presented as miligrams (mg) or micrograms (μg) per liter (L). Measuring concentrations can help us understand if a body of water is suitable for aquatic life. They do not always show the impact of each tributary on its receiving body of water (where the water next flows into, in this case either the Connecticut River or Long Island Sound).
+The samples collected were tested for the concentration of each parameter and the results are presented as milligrams (mg) or micrograms (μg) per liter (L). Measuring concentrations can help us understand if a body of water is suitable for aquatic life. They do not always show the impact of each tributary on its receiving body of water (where the water next flows into, in this case either the Connecticut River or Long Island Sound).
 
 ::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
 ![Ecoregions in the US\
 Source: US EPA](images/ecomap.gif){width="400"}
 :::
 
-There are two challenges with comparing nutrient (N & P) results across the entire Connecticut River watershed. The first is that the watershed is so large geographically that we would not expect to see the same natural background levels of nutrients throughout the entire region. That is, if there were no humans changing the land or altering the natural nutrient cycles, there would still be lower levels of nutrient concentrations as you go north and up elevation within the watershed, and higher levels as you move south and down in elevation. The other is that the watershed includes four different states, each with their own way of regulating whether a body of water is considered impaired or not. Some of these states have numeric criteria to compare results to, while others have narrative criteria that depends on a specific condition being caused by elevated nutrients (i.e. eutrophication) in order to consider a river "impaired".
+There are two challenges with comparing nutrient (N & P) results across the entire Connecticut River watershed. The first is that the watershed is so large geographically that we would not expect to see the same natural background levels of nutrients throughout the entire region. That is, if there were no humans changing the land or altering the natural nutrient cycles, there would still be lower levels of nutrient concentrations as you go north and up in elevation within the watershed, and higher levels as you move south and down in elevation. The other challenge is that the watershed includes four different states, each with their own way of regulating whether a body of water is considered impaired or not. Some of these states have numeric criteria to compare results to, while others have narrative criteria that depends on a specific condition being caused by elevated nutrients (i.e. eutrophication) in order to consider a river "impaired."
 
 In the early 2000s, the US EPA released a series of ambient water quality recommendations for nutrient criteria by ecoregion. These recommendations are based on actual samples collected throughout each region. These are stringent, scientifically based, and consistent across state lines, so they are the criteria we are choosing to compare the results to. The Connecticut River watershed falls into two ecoregions: "VIII: Nutrient Poor Largely Glaciated Upper Midwest And Northeast" and "XIV: Eastern Coastal Plains." The recommendations for ecoregion VIII are 0.38 mg/L for TN and 10.00 µg/L for TP. The recommendations for ecoregion XIV are 0.71 mg/L for TN and 31.25 µg/L for TP. These thresholds are used in the charts below.
 
@@ -406,7 +413,7 @@ ggplot(tributary, aes(y = fct_reorder(SiteName, Lat), x = ResultValue, fill = Ye
              rows = vars(EcoRegion), 
              scales = "free", 
              labeller = labeller(Parameter = parameter_labs, EcoRegion = label_both)) +
-  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red") +
+  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red", size = 1) +
   scale_linetype_manual(name = "", values = 2)
 ```
 
@@ -429,14 +436,14 @@ ggplot(mainstem, aes(y = fct_reorder(SiteName, Lat), x = ResultValue, fill = Yea
              rows = vars(EcoRegion), 
              scales = "free", 
              labeller = labeller(Parameter = parameter_labs, EcoRegion = label_both)) +
-  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red") +
+  geom_vline(data = thresholds, aes(xintercept = Threshold, linetype = "EcoRegion Threshold"), color = "red", size = 1) +
   scale_linetype_manual(name = "", values = 2)
   
 ```
+
 The chart above has the mainstem sampling locations arranged from north to south within each EcoRegion with a dotted line to indicate the recommended EPA threshold for the indicated parameter. A reminder that there is no threshold for chloride within the range presented.
 
-We are unsure why the Thompsonville, CT, sample in 2021 came back so high for nitrogen, but there is no reason to suspect the sample as invalid. 
-
+We are unsure why the Thompsonville, CT, sample in 2021 came back so high for nitrogen, but there is no reason to suspect the sample as invalid.
 :::
 
 ### Maps
@@ -452,6 +459,7 @@ Here is the same data from above presented on a map to show you the watershed of
 watershed_states <- map_data("state") %>% 
   filter(region %in% c("connecticut", "massachusetts", "vermont", "new hampshire")) %>% 
            filter(!subregion %in% c("martha's vineyard", "nantucket"))
+
 # map files
 trib_map <- st_read("data/maps/Splza_tribs.shp") %>%
   fortify() %>%
@@ -490,7 +498,7 @@ main_map_data <- splza_results_loading_no_outliers %>%
 
 filter(trib_map_data, Parameter == "TN") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip", alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -510,7 +518,7 @@ ggplot() +
 
 filter(main_map_data, Parameter == "TN") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip",, alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -521,7 +529,6 @@ ggplot() +
   facet_wrap(vars(Year))
 
 ```
-
 :::
 
 #### Phosphorus
@@ -536,7 +543,7 @@ ggplot() +
 
 filter(trib_map_data, Parameter == "TP") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip", alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -556,7 +563,7 @@ scale_fill_gradient(low = "white", high = "darkorange", limits = c(0,130), break
 
 filter(main_map_data, Parameter == "TP") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip", alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -581,7 +588,7 @@ scale_fill_gradient(low = "white", high = "darkorange", limits = c(0,130), break
 
 filter(trib_map_data, Parameter == "Cl") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip", alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -600,7 +607,7 @@ scale_fill_gradient(low = "white", high = "mediumorchid", limits = c(0,100), bre
 
 filter(main_map_data, Parameter == "Cl") %>%
 ggplot() +
-  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "dark green", linetype = "dotted", fill="green", alpha=0.3) +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray20", linetype = "dotted", fill="papayawhip", alpha=0.3) +
   expand_limits(x = watershed_states$long, y = watershed_states$lat) +
   scale_shape_identity() +
   coord_map() +
@@ -615,7 +622,7 @@ ggplot() +
 
 ## Loading
 
-Tributaries aeach have different flows and watershed size and do not contribute equal amounts of water and therefore equal amounts of nutrients to the system by concentration. Concentration (amount per volume of water) can be multiplied by flow (volume of water per time unit) to get a loading value (amount per time unit) that allows a more accurate comparison of impact between tributaries. Loading values for the mainstem are not presented here due to the complex flow regime of a river that has both significant hydropower regulation and a long tidal portion.
+Tributaries each have different flows and watershed size and do not contribute equal amounts of water and therefore equal amounts of nutrients to the system by concentration. Concentration (amount per volume of water) can be multiplied by flow (volume of water per time unit) to get a loading value (amount per time unit) that allows a more accurate comparison of impact among tributaries. Loading values for the mainstem are not presented here due to the complex flow regime of a river that has both significant hydropower regulation and a long tidal portion.
 
 ```{R fig.asp = 0.4}
 #| label: Concentration v loading
@@ -644,12 +651,13 @@ If we wanted to direct restoration efforts on particular tributaries, those effo
 #| fig-cap: Tributary Loading by Watershed Size
 
 tributary %>%
-  group_by(SiteName, Parameter, Drainage_sq_mi, EcoRegion)%>%
+  mutate("GraphName" = paste(SiteName," (",Drainage_sq_mi," sq mi)", sep = "")) %>%
+  group_by(GraphName, Parameter, Drainage_sq_mi, EcoRegion) %>%
   summarise("Loading" = median(ResultValue)) %>%
-  ggplot(aes(y = fct_reorder(SiteName, Drainage_sq_mi), x = Loading, fill = Parameter)) +
+  ggplot(aes(y = fct_reorder(GraphName, Drainage_sq_mi), x = Loading, fill = Parameter)) +
   geom_col(color = "black") +
   scale_fill_manual(values = c("mediumorchid", "deepskyblue", "darkorange")) +
-  labs(x = "Estimated Loading (lbs/day)", y = "Site Location") +
+  labs(x = "Estimated Median Loading (lbs/day)", y = "Site Location (ordered by watershed size)") +
   theme_light() +
   guides(fill = FALSE) +
   facet_grid(cols = vars(Parameter), 
@@ -657,11 +665,12 @@ tributary %>%
              scales = "free", 
              labeller = labeller(Parameter = loading_labs, EcoRegion = label_both))
 
+
 ```
 
-This chart is arranged by wastershed size instead of geographically; the largest watersheds are at the top of each EcoRegion panel. It presents only the median result, leaving out any exceptionally high or low results at each site and allows for easier comparison between rivers. With no human impacts affecting nutrient or chloride levels in a particular watershed, we would expect to see values decrease with watershed size and lower values in EcoRegion VIII compared to EcoRegion XIV. 
+This chart is arranged by wastershed size instead of geographically; the largest watersheds are at the top of each EcoRegion panel. It presents only the median result, leaving out any exceptionally high or low results at each site and allows for easier comparison among rivers. With no human impacts affecting nutrient or chloride levels in a particular watershed, we would expect to see values decrease with watershed size and lower values in EcoRegion VIII compared to EcoRegion XIV.
 
-Looking at the results in this way allows us to see which tributaries are contributing more than their "fair share" of each paramter. Some notable mentions include smaller watersheds are contributing in all three parameters. These tributaries were usually selected because they are in urban areas and so there was an interest in understanding what they were contributing. Smaller, rural tributaries were less likely to be accessible or of note to be included in this study. Also the Scantic River and the Farmington River stand out for nitrogen and phosphorus, respectively.
+Looking at the results in this way allows us to see which tributaries are contributing more than their "fair share" of each paramter. It is notable that many of the smaller watersheds (such as Mink, Clark, Pecousic, Newton, and Cooley Brooks) are contributing excessive amounts of all three parameters. These tributaries were usually selected because they are in urban areas and so there was an interest in understanding what they were contributing. Smaller, rural tributaries were less likely to be accessible or of concern to be included in this study. Also, the Scantic River and the Farmington River stand out once again for nitrogen and phosphorus, respectively.
 
 ### Tributary Loading by State
 
@@ -1013,8 +1022,7 @@ treemap(.,
 
 Samplepalooza was a successful project in collecting data to help understand the Connecticut River watershed on broad scale as well as an incredible exercise in collaboration across state lines. Since Samplepalooza started in 2014, regional efforts to monitor for and accurately model nitrogen contributions from throughout the watershed and to Long Island Sound have greatly increased and the usefulness of a single day monitoring event in contributing to the great body of knowledge has waned. While this iteration of Samplepalooza has concluded, we are excited to be launching a regional nitrogen monitoring program in the summer of 2024 to focus on getting a more clear understanding of less frequently monitoring tributaries, find and protect high quality waters, and bracket and track potential nitrogen sources. While the focus is on nitrogen due to Long Island Sound, any nitrogen reduction projects would ideally also reduce phosphorus and other runoff contributions.
 
-Chloride monitoring was a secondary objective of Samplepalooza and is something that is of increasing interest to CRC and our constituents. As of this report, there is no concrete plan to increase chloride monitoring but it is being considered. 
-
+Chloride monitoring was a secondary objective of Samplepalooza and is something that is of increasing interest to CRC and our constituents. As of this report, there is no concrete plan to increase chloride monitoring, but it is being considered.
 
 # Full Results
 
