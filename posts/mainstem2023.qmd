@@ -98,13 +98,13 @@ Throughout the season, results are uploaded to [*Is It Clean?/¿Está Limpio?*](
 # Why *E. coli*?
 
 ::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
-![Source: Emojipedia](_images/pile-of-poo.gif){fig-alt="Animated pile of poo emoji" fig-align="right" width="150"}
+![Source: Emojipedia](images/pile-of-poo.gif){fig-alt="Animated pile of poo emoji" fig-align="right" width="150"}
 :::
 
 *Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals including mammals, birds, and humans. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
 
 ::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
-![Source: WikiCommons](_images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
+![Source: WikiCommons](images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
 :::
 The Environmental Protection Agency (EPA) has made [water quality recommendations](https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods) for levels of *E. coli* to determine suitability for recreation. These are broken down into primary and secondary contact recreation. Primary contact means there is a high likelihood of accidentally ingesting water due to being fully immersed in the water such as during swimming, water skiing, or surfing. Secondary contact means there is a lower likelihood of accidentally swallowing water due to water spray or brief unintended immersion such as boating, fishing, or wading. In this report and throughout CRC's sharing of bacteria data, "swimming" is shorthand for primary contact and "boating" is shorthand for secondary contact.
 
