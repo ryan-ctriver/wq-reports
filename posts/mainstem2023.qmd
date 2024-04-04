@@ -1,0 +1,311 @@
+---
+title: "DRAFT Connecticut River E. coli Report (2019-2023)"
+author: "Ryan O'Donnell"
+desription: "Five year summary of E.coli sampling on the Connecticut River"
+date: "4/1/2024"
+format:
+  html:
+    df-print: paged
+    toc: true
+    echo: false
+    warning: false
+categories:
+  - Bacteria
+  - E. coli
+  - Mainstem
+  - 2019
+  - 2020
+  - 2021
+  - 2022
+  - 2023
+  - Recreation
+  - Human Health
+---
+
+```{R}
+#|label: library set-up
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(ggbrick)
+library(htmlwidgets)
+library(gt)
+```
+
+```{R}
+#|label: data import and organizing
+#|output: FALSE
+#|warning: FALSE
+
+# thresholds
+
+swimming <- 235
+boating <- 575
+
+
+# map info
+ctr_mainstem <- st_read("_data/_maps/ctr-mainstem-line.shp", quiet = TRUE) %>%
+  fortify()
+
+watershed_states <- map_data("state") %>% 
+  filter(region %in% c("connecticut", "massachusetts", "vermont", "new hampshire")) %>% 
+           filter(!subregion %in% c("martha's vineyard", "nantucket"))
+
+# data
+
+allsiteinfo <- read_xlsx("C:/WorkingData/R/CRC-WQ-Data/InputData/allsiteinfo.xlsx")
+allsitespivoted <- allsiteinfo %>%
+  pivot_longer(cols = c("Old", "New"),
+               names_to = NULL,
+               values_to = "JOINID")
+  
+bactdata_orig <- read_xlsx("_data/19_23CTRMainstemData.xlsx")
+
+bactdata_tidy <- bactdata_orig %>%
+  mutate(ResultValue = case_when(
+    str_detect(ResultDetection, "Above") ~ ResultLimit * 2,
+    str_detect(ResultDetection, "Not") ~ ResultLimit/2,
+    TRUE ~ ResultValue
+  )) %>%
+  left_join(., allsitespivoted, by = c("SiteID" = "JOINID")) %>%
+  mutate(SiteID = SiteID.y,
+         Lat = as.numeric(Lat),
+         Lon = as.numeric(Lon)) %>%
+  select(c("SiteID", "SampleDate", "ResultValue", "WeatherStatus", "Chart Name", "Lat", "Lon", "ResultDetection", "ResultLimit")) %>%
+  filter(`Chart Name` != "Pynchon Point")
+  
+
+```
+
+Volunteers for the Connecticut River Conservancy (CRC)collect samples from spots along the Connecticut River weekly from thirteen locations in Massachusetts and eight in Connecticut. Volunteers from the [Putney Rowing Club](https://putneyrowingclub.org/) collect samples six times a year from one location in Vermont. Sampling usually occurs during the peak recreation season from the first week of June through sometime in September. The sampling season in 2020 was delayed until July and ran through the end of October due to the COVID-19 pandemic.
+
+These sites were all selected as points of recreational interest; they are samples from boat ramps, docks, or at popular swimming holes. Most of the sites are directly on the mainstem of the Connecticut River. The Oxbow and Wethersfield Cove sites are located in semi-separate bodies of water that represent a mix of the main tributary to that body and the Connecticut River.
+
+Sample results are classified as having been sampled after wet or dry weather. A sample is classified as wet weather if more than 0.1 inch of rain has fallen in the previous 48 hours. This indicates whether a sample result is being influenced by the presence of runoff. Runoff is rainwater or snowmelt that enters directly into the nearest body of water without being filtered through groundwater systems. The more impervious surfaces like asphalt and concrete there are near a sampling location, the more runoff is created during a rain event. Runoff carries with it pollutants, including bacteria, from land into the receiving water with it.
+
+Throughout the season, results are uploaded to [*Is It Clean?/¿Está Limpio?*](https://www.connecticutriver.us) as they become available alongside other results from throughout the Connecticut River watershed.
+
+# Why *E. coli*?
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Source: Emojipedia](_images/pile-of-poo.gif){fig-alt="Animated pile of poo emoji" fig-align="right" width="150"}
+:::
+
+*Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals including mammals, birds, and humans. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
+
+::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
+![Source: WikiCommons](_images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
+:::
+The Environmental Protection Agency (EPA) has made [water quality recommendations](https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods) for levels of *E. coli* to determine suitability for recreation. These are broken down into primary and secondary contact recreation. Primary contact means there is a high likelihood of accidentally ingesting water due to being fully immersed in the water such as during swimming, water skiing, or surfing. Secondary contact means there is a lower likelihood of accidentally swallowing water due to water spray or brief unintended immersion such as boating, fishing, or wading. In this report and throughout CRC's sharing of bacteria data, "swimming" is shorthand for primary contact and "boating" is shorthand for secondary contact.
+
+# Results
+
+::: callout-tip
+## Interactive Graphic
+
+The graphic below is interactive. Hover your mouse over a point on the chart to highlight its counterpart on the map.
+:::
+
+```{R}
+#|label: flagship graph
+
+bact_gms <- bactdata_tidy %>%
+  group_by(SiteID, WeatherStatus, `Chart Name`, Lat, Lon) %>%
+  summarise("GeoMean" = exp(mean(log(ResultValue)))) 
+
+bact_gms_map <- bact_gms %>%
+  pivot_wider(names_from = WeatherStatus, values_from = GeoMean)
+
+gm_map <- ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray50", linetype = "dotted", alpha=0) +
+  geom_sf(data = ctr_mainstem, color = "#332288") +
+  geom_point_interactive(data = bact_gms_map, aes(x = Lon, y = Lat, color = Wet, data_id = SiteID), size = 4) +
+  geom_point_interactive(data = bact_gms_map, aes(x = Lon, y = Lat, color = Dry, data_id = SiteID), size = 1.5, shape = 15) +
+  binned_scale(
+    aesthetics = "color",
+    scale_name = "stepsn",
+    palette = function(x) c("#117733", "#DDCC77", "#882255"),
+    breaks = c(235, 575),
+    limits = c(0, 2420),
+    show.limits = TRUE,
+    guide = NULL
+  ) +
+  coord_sf(xlim = c(-72.4, -72.7), ylim = c(43, 41.45), expand = FALSE) +
+  theme_void()
+
+gm_chart <- ggplot(bact_gms, aes(x = GeoMean, y = fct_reorder(`Chart Name`, Lat), shape = WeatherStatus, fill = GeoMean), color = "black") +
+  geom_point_interactive(aes(data_id = SiteID), size = 4) +
+  binned_scale(
+    aesthetics = "fill",
+    scale_name = "stepsn",
+    palette = function(x) c("#117733", "#DDCC77", "#882255"),
+    breaks = c(235, 575),
+    limits = c(0, 2420),
+    show.limits = TRUE,
+    guide = NULL
+  ) +
+  scale_shape_manual(name = "Weather", values = c(22, 21)) +
+  geom_vline(aes(xintercept = swimming, linetype = "Swimming"), color = "#DDCC77", size = 1) +
+  geom_vline(aes(xintercept = boating, linetype = "Boating"), color = "#882255", size = 1) +
+  scale_linetype_manual(name = "Thresholds", values = c(2,3)) +
+  labs(
+    title = "Average *E. coli* Levels",
+    subtitle = "2019-2023",
+    x = "Average *E. coli* (MPN/100mL)",
+    y = ""
+  ) +
+  theme_light(
+    base_size = 18
+    ) +
+  theme(title = ggtext::element_markdown(),
+        axis.title.x = ggtext::element_markdown())
+
+girafe(ggobj = gm_map + gm_chart, width_svg = 10.5, height_svg = 10) %>%
+  girafe_options(opts_hover(css = "fill:#88CCEE;"))
+
+```
+
+The average of all results from the last five years on the Connecticut River have been pretty good. All sites were suitable for all types of recreation during dry weather, and most were on average suitable during wet weather as well. The few sites that were not suitable for swimming were still suitable for boating.
+
+The Connecticut River is a large river and carries a lot of water compared to its tributaries. Because of this, runoff is easily diluted and results in generally lower bacteria numbers for the length sampled. The cluster of three sites with the highest numbers in southern Massachusetts (Medina St, Pioneer Valley Riverfront Club, and Pioneer Valley Yacht Club) are all impacted by [combined sewer overflows](https://www.ctriver.org/post/stormwater-cso) in addition to increased runoff from urbanization. As mentioned above, Wethersfield Cove is a semi-separate body of water from the mainstem and so is more easily affected by local runoff.
+
+## How often is the river swimmable and boatable?
+
+```{R}
+#|label: swimmable
+
+brickdata <- bactdata_tidy %>%
+  mutate("Year" = year(SampleDate),
+         "Level" = case_when(
+           ResultValue < 235 ~ "A",
+           ResultValue > 575 ~ "C",
+           TRUE ~ "B"
+         )) %>%
+  count(Year, WeatherStatus, Level, `Chart Name`) 
+
+ggplot(brickdata, aes(x = WeatherStatus, y = n, fill = Level)) +
+  geom_brick(type = "soft_random") +
+  coord_brick() +
+  scale_fill_manual(
+    values = c("#117733", "#DDCC77", "#882255"),
+    labels = c("A" = "Swimmable & Boatable", "B" = "Boatable Only", "C" = "Unsuitable for Recreation"),
+    name = "",
+  ) +
+  labs(title =  "Number of Samples Meeting Standards During Wet and Dry Weather",
+       y = "",
+       x = "Weather") +
+  theme(legend.position = "bottom") +
+  facet_grid(cols = vars(Year))
+```
+
+Each brick on the chart above represents one sample collected and is colored by which standards it is or isn't meeting. This shows the difference between the numbers of wet and dry weather samples collected each year as well as how the weather affects the sample results. Overall, most of the samples collected meet the standard for swimming and boating in either wet or dry weather, and a majority of the samples that are either boatable only or unsuitable for recreation were collected during wet weather. 
+
+## Results by Sample Date and Location
+
+::: callout-tip
+### Interactive Graphic
+
+The charts below are interactive. Select a sampling year from the tabs and hover your mouse over a column to see the date, the result, and to highlight other results from the same sampling day.
+:::
+
+::: panel-tabset
+```{R}
+#|label: yearly bact graph data
+
+yearly_bact <- bactdata_tidy %>%
+  separate_wider_regex(SiteID, c(State = ".*", "-", River = ".*", "_", Mile = ".*"), cols_remove = FALSE) %>%
+  mutate("SampleWeek" = week(SampleDate),
+         "Year" = year(SampleDate),
+         "Date" = fct_reorder(format(SampleDate, "%b-%d"), SampleDate),
+         "Month" = format(SampleDate, "%B"),
+         Mile = as.numeric(Mile),
+         "ResultwCensor" = case_when(
+           str_detect(ResultDetection, "Above") ~ paste0(">",ResultLimit),
+           str_detect(ResultDetection, "Not") ~ paste0(">",ResultLimit),
+           TRUE ~ as.character(ResultValue)
+         ),
+         "Label" = paste(Date, ", ", ResultwCensor, " MPN/100 mL", sep = "")) %>%
+  filter(River == "CTR")
+
+```
+
+```{R}
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(unique(yearly_bact$Year), \(.year) {
+    knitr::knit_child(
+      input = "_yearly_bactgraph_mainstem.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n')
+```
+:::
+
+The sites are ordered on the chart from upstream to downstream from top left to bottom right. Sites that were not sampled in a year do not appear on the chart.
+
+## Complete Results
+
+Please use the table below to browse the complete results used in this report.
+
+```{r}
+#| label: full results table
+
+resultsdisplay <- bactdata_tidy %>%
+  mutate("LatLon" = paste(round(Lat, digits = 4), round(Lon, digits = 4), sep = ", "),
+         "ResultwCensor" = case_when(
+           str_detect(ResultDetection, "Above") ~ paste0(">",ResultLimit),
+           str_detect(ResultDetection, "Not") ~ paste0(">",ResultLimit),
+           TRUE ~ as.character(ResultValue)
+         )) %>%
+  select(c("Chart Name", "SiteID", "SampleDate", "WeatherStatus", "ResultwCensor", "LatLon"))
+
+gt(resultsdisplay) %>%
+  tab_header(title = "Complete Mainstem Sampling Results",
+             subtitle = "(2019-2023)") %>%
+  cols_label(
+    `Chart Name` = "Site Name",
+    SiteID = "Site ID",
+    SampleDate = "Date",
+    WeatherStatus = "Weather",
+    ResultwCensor = "E. coli\n(MPN/100 mL)",
+    LatLon = "Lat, Lon"
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(color = "#DDCC77"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = ResultwCensor,
+      rows = parse_number(ResultwCensor) >= 235
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(color = "#882255"),
+      cell_text(weight = "bolder")
+    ),
+    locations = cells_body(
+      columns = ResultwCensor,
+      rows = parse_number(ResultwCensor) >= 575
+    )
+  ) %>%
+  opt_interactive(use_compact_mode = TRUE,
+                  use_highlight = TRUE,
+                  use_filters = TRUE,
+                  use_text_wrapping = TRUE)
+```
