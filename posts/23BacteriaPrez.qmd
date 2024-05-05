@@ -1,0 +1,491 @@
+---
+title: "Bacteria Monitoring"
+subtitle: "*Is It Clean* 2023 Wrap-Up & Five Year Mainstem Review"
+author: "Ryan O'Donnell"
+institute: "Connecticut River Conservancy"
+date: "May 6, 2023"
+format:
+  revealjs:
+    theme: moon
+    transition: slide
+---
+
+```{R}
+#| label: library & data setup
+#| warning: FALSE
+#| output: FALSE
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(ggbrick)
+library(htmlwidgets)
+library(gt)
+
+# thresholds
+
+swimming <- 235
+boating <- 575
+
+# 2023 ctriverus review map info
+ctr_watershed <- ctr_mainstem <- st_read("_data/_maps/ctr-watershed.shp", quiet = TRUE) %>%
+  fortify()
+
+nhd_namedlines <- st_read("_data/_maps/nhd-namedrivers.shp", quiet = TRUE) %>%
+  fortify()
+
+nhd_polygons <- st_read("_data/_maps/nhd-riverpolygons.shp", quiet = TRUE) %>%
+  fortify()
+
+quabbin <- st_read("_data/_maps/quabbinpolygon.shp", quiet = TRUE) %>%
+  fortify()
+
+# 2023 ctrivus review data
+
+IIC23 <- read_csv("_data/2023ctriverusresults-checked.csv",
+                  col_names = c(
+                    "SiteName",
+                    "SiteID",
+                    "SampleDate",
+                    "delete-Lab Sample ID",
+                    "delete-Time Collected",
+                    "delete-Time Delivered To Lab",
+                    "delete-Duplicate",
+                    "WetWeather",
+                    "delete-Within holding time(6 hrs)?",
+                    "delete-Preservation temperature (deg C)",
+                    "delete-Preservation ~4 deg C",
+                    "delete-Volume (mL)",
+                    "SampleResult",
+                    "delete-Lab",
+                    "delete-Analyst",
+                    "MonitoringOrg",
+                    "delete-Comments"
+                    ),
+                  skip = 1) %>%
+  select(-starts_with("delete"))
+
+IIC23sitinfo <- read_xlsx("_data/23_ctriverussiteidsandlocations.xlsx")
+
+excluded_sites <- c("CQC", "EC", "LB1", "LD", "PA")
+
+IICdata23 <- IIC23 %>%
+  left_join(., IIC23sitinfo, by = "SiteID") %>%
+  filter(!SiteID %in% excluded_sites) %>%
+  select(-"Name") %>%
+  mutate(SampleResult = case_when(
+    str_detect(SampleResult, ">") ~ parse_number(SampleResult) * 2,
+    str_detect(SampleResult, "<") ~ parse_number(SampleResult)/2,
+    TRUE ~ as.numeric(SampleResult)))
+
+# 5 year map info
+ctr_mainstem <- st_read("_data/_maps/ctr-mainstem-line.shp", quiet = TRUE) %>%
+  fortify()
+
+watershed_states <- map_data("state") %>% 
+  filter(region %in% c("connecticut", "massachusetts", "vermont", "new hampshire")) %>% 
+           filter(!subregion %in% c("martha's vineyard", "nantucket"))
+
+# 5 year data
+
+allsiteinfo <- read_xlsx("C:/WorkingData/R/CRC-WQ-Data/InputData/allsiteinfo.xlsx")
+allsitespivoted <- allsiteinfo %>%
+  pivot_longer(cols = c("Old", "New"),
+               names_to = NULL,
+               values_to = "JOINID")
+  
+bactdata_orig <- read_xlsx("_data/19_23CTRMainstemData.xlsx")
+
+bactdata_tidy <- bactdata_orig %>%
+  mutate(ResultValue = case_when(
+    str_detect(ResultDetection, "Above") ~ ResultLimit * 2,
+    str_detect(ResultDetection, "Not") ~ ResultLimit/2,
+    TRUE ~ ResultValue
+  )) %>%
+  left_join(., allsitespivoted, by = c("SiteID" = "JOINID")) %>%
+  mutate(SiteID = SiteID.y,
+         Lat = as.numeric(Lat),
+         Lon = as.numeric(Lon)) %>%
+  select(c("SiteID", "SampleDate", "ResultValue", "WeatherStatus", "Chart Name", "Lat", "Lon", "ResultDetection", "ResultLimit")) %>%
+  filter(`Chart Name` != "Pynchon Point")
+```
+
+# Program Background
+
+## Escheria coli
+
+![*E. coli* is found in the guts of all endotherms (Source: Emojipedia)](images/pile-of-poo.gif){.absolute right="0" width="400"}
+![Drawing of *Escherichia coli* organism (Source: Wikicommons)](images/Escherichia_coli_by_wikicommons.png){.absolute left="0" width="650"}
+
+
+## Colilert System
+
+![Source:IDEXX](images/colilert-main-image-of-scientist.jpg)
+
+# Is It Clean? / ¿Está Limpio?
+
+[Visit Website](www.connecticutriver.us)
+
+## 2023 Contributions
+
+::: r-fit-text
+::: {.fragment .fade-in-then-semi-out}
+- Samples collected in all **4** states
+:::
+
+::: {.fragment .fade-in-then-semi-out}
+- **7** monitoring groups contributed
+:::
+
+::: {.fragment .fade-in-then-semi-out}
+- **203** locations sampled
+:::
+
+::: {.fragment .fade-in-then-semi-out}
+- **1366** results submitted!
+:::
+:::
+
+## How often was it swimmable in 2023?
+
+```{R}
+#|label: results maps
+
+IIC_summary <- IICdata23 %>% 
+  mutate(
+    "SwimExc" = case_when(
+      SampleResult > swimming ~ 1,
+      SampleResult < swimming ~ 0
+    ),
+    "BoatExc" = case_when(
+      SampleResult > boating ~ 1,
+      SampleResult < boating ~ 0
+    )) %>%
+  group_by(SiteName, SiteID, WetWeather, Lat, Long, MonitoringOrg) %>%
+  summarise("GeoMean" = exp(mean(log(SampleResult))), "ResultCount" = n(), "SwimExcCount" = sum(SwimExc), "BoatExcCount" = sum(BoatExc)) %>%
+  mutate(
+    "SwimPercentPass" = 1 - SwimExcCount/ResultCount,
+    "BoatPercentPass" = 1 - BoatExcCount/ResultCount,
+    "SwimText" = case_when(
+      SwimPercentPass == 1 ~ "Always (100%)",
+      SwimPercentPass == 0 ~ "Never (0%)",
+      SwimPercentPass >= 0.75 ~ "Usually (>75%)",
+      SwimPercentPass >= 0.5 ~ "Sometimes (50% - 75%)",
+      SwimPercentPass >= 0.25 ~ "Usually Not (25% - 50%)",
+      SwimPercentPass > 0 ~ "Almost Never (<25%)"
+    ),
+    "BoatText" = case_when(
+      BoatPercentPass == 1 ~ "Always (100%)",
+      BoatPercentPass == 0 ~ "Never (0%)",
+      BoatPercentPass >= 0.75 ~ "Usually (>75%)",
+      BoatPercentPass >= 0.5 ~ "Sometimes (50% - 75%)",
+      BoatPercentPass >= 0.25 ~ "Usually Not (25% - 50%)",
+      BoatPercentPass > 0 ~ "Almost Never (<25%)"
+    ),
+    WetWeather = case_when(
+      WetWeather == "Y" ~ "Wet Weather",
+      WetWeather == "N" ~ "Dry Weather")
+    )
+
+swimmap <- ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), fill = "papayawhip", color = "black") +
+  geom_sf(data = ctr_watershed, fill = "white", color = "gray10", alpha = 0.8) +
+  geom_sf(data = nhd_polygons, fill = "skyblue", color = "skyblue") +
+  geom_sf(data = quabbin, fill = "skyblue", color = "skyblue") +
+  geom_sf(data = nhd_namedlines, color = "skyblue", linewidth = 0.5) +
+  geom_point_interactive(data = IIC_summary, aes(x = Long, y = Lat, fill = fct_reorder(SwimText, SwimPercentPass, .desc = TRUE), tooltip = SiteName, data_id = SiteID), shape = 21) +
+  scale_fill_manual(name = "", values = c("blue", "green", "yellow", "orange", "red", "darkred")) +
+  coord_sf(xlim = c(min(IIC_summary$Long) - 0.05, max(IIC_summary$Long) + 0.05), ylim = c(min(IIC_summary$Lat) - 0.05, max(IIC_summary$Lat) + 0.05), expand = FALSE) +
+  theme_void() +
+  facet_wrap(vars(WetWeather))
+
+girafe(ggobj = swimmap, height_svg = 6) %>%
+  girafe_options(opts_hover(css = "fill:#00FFFF;"))
+
+```
+
+## How often was it boatable in 2023?
+
+```{R}
+boatmap <- ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), fill = "papayawhip", color = "black") +
+  geom_sf(data = ctr_watershed, fill = "white", color = "gray10", alpha = 0.8) +
+  geom_sf(data = nhd_polygons, fill = "skyblue", color = "skyblue") +
+  geom_sf(data = quabbin, fill = "skyblue", color = "skyblue") +
+  geom_sf(data = nhd_namedlines, color = "skyblue", linewidth = 0.5) +
+  geom_point_interactive(data = IIC_summary, aes(x = Long, y = Lat, fill = fct_reorder(BoatText, BoatPercentPass, .desc = TRUE), tooltip = SiteName, data_id = SiteID), shape = 21) +
+  scale_fill_manual(name = "", values = c("blue", "green", "yellow", "orange", "red", "darkred")) +
+  coord_sf(xlim = c(min(IIC_summary$Long) - 0.05, max(IIC_summary$Long) + 0.05), ylim = c(min(IIC_summary$Lat) - 0.05, max(IIC_summary$Lat) + 0.05), expand = FALSE) +
+  theme_void() +
+  facet_wrap(vars(WetWeather))
+
+girafe(ggobj = boatmap, height_svg = 6) %>%
+  girafe_options(opts_hover(css = "fill:#00FFFF;"))
+```
+
+## 2023 Top 10
+```{R}
+#| label: top 10 table
+
+ranked_data <- IIC_summary %>%
+  filter(ResultCount > 1) %>%
+  select(c("SiteName", "SiteID", "MonitoringOrg", "WetWeather", "GeoMean", "Lat", "Long")) %>%
+  pivot_wider(names_from = WetWeather, values_from = GeoMean) %>%
+  drop_na() %>%
+  mutate("Balanced" = mean(c(`Wet Weather`, `Dry Weather`))) %>%
+  ungroup()%>%
+  mutate("Rank" = dense_rank(Balanced))
+
+topten <- ranked_data %>%
+  filter(Rank <= 10) %>%
+  select(c("Rank", "SiteName", "MonitoringOrg", "Dry Weather", "Wet Weather")) %>%
+  arrange(Rank)
+
+gt(topten) %>%
+  tab_spanner(label = "Average (MPN/100mL)",
+              columns = c(`Dry Weather`:`Wet Weather`))%>%
+  cols_label(
+    SiteName = "Site Name",
+    MonitoringOrg = "Monitoring Org",
+    `Dry Weather` = "Dry",
+    `Wet Weather` = "Wet"
+  ) %>%
+  fmt_number(
+    columns = c(`Dry Weather`:`Wet Weather`),
+    decimals = 1
+  ) %>%
+  tab_source_note("Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking.") %>%
+  opt_stylize(style = 3) %>%
+  tab_options(table.width = pct(100))
+
+```
+
+
+## 2023 Worst 10
+```{R}
+#|label: worst10
+
+worstten <- ranked_data %>%
+  filter(Rank >=115) %>%
+  select(c("Rank", "SiteName", "MonitoringOrg", "Dry Weather", "Wet Weather")) %>%
+  arrange(desc(Rank))
+
+gt(worstten) %>%
+  tab_spanner(label = "Average (MPN/100mL)",
+              columns = c(`Dry Weather`:`Wet Weather`))%>%
+  cols_label(
+    SiteName = "Site Name",
+    MonitoringOrg = "Monitoring Org",
+    `Dry Weather` = "Dry",
+    `Wet Weather` = "Wet"
+  ) %>%
+  fmt_number(
+    columns = c(`Dry Weather`:`Wet Weather`),
+    decimals = 1
+  ) %>%
+  tab_source_note("Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking.") %>%
+  opt_stylize(style = 3, color = "red") %>%
+  tab_options(table.width = pct(100))
+
+```
+
+## Full Ranking {.scrollable}
+
+```{R}
+#|label: all sites
+
+ranked_data %>%
+  select(c("Rank", "SiteName", "MonitoringOrg", "Dry Weather", "Wet Weather")) %>%
+  arrange(Rank) %>%
+  gt() %>%
+  tab_spanner(label = "Average (MPN/100mL)",
+              columns = c(`Dry Weather`:`Wet Weather`))%>%
+  cols_label(
+    SiteName = "Site Name",
+    MonitoringOrg = "Monitoring Org",
+    `Dry Weather` = "Dry",
+    `Wet Weather` = "Wet"
+  ) %>%
+  fmt_number(
+    columns = c(`Dry Weather`:`Wet Weather`),
+    decimals = 1
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "darkorange"),
+    locations = cells_body(
+      columns = `Dry Weather`,
+      rows = `Dry Weather` > 235
+    )
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "darkorange"),
+    locations = cells_body(
+      columns = `Wet Weather`,
+      rows = `Wet Weather` > 235
+    )
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "darkred"),
+    locations = cells_body(
+      columns = `Wet Weather`,
+      rows = `Wet Weather` > 575
+    )
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "darkred"),
+    locations = cells_body(
+      columns = `Dry Weather`,
+      rows = `Dry Weather` > 575
+    )
+  ) %>%
+  tab_source_note("Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking.") %>%
+  opt_stylize(style = 3, color = "green") %>%
+  tab_options(table.width = pct(100))
+
+
+```
+
+# Connecticut River Mainstem
+
+5 Year Review
+
+## 5 Year Overview
+
+```{R}
+#|label: flagship graph
+
+bact_gms <- bactdata_tidy %>%
+  group_by(SiteID, WeatherStatus, `Chart Name`, Lat, Lon) %>%
+  summarise("GeoMean" = exp(mean(log(ResultValue)))) 
+
+bact_gms_map <- bact_gms %>%
+  pivot_wider(names_from = WeatherStatus, values_from = GeoMean)
+
+gm_map <- ggplot() +
+  geom_polygon(data = watershed_states, aes(x = long, y = lat, group = region), color = "gray50", linetype = "dotted", alpha=0) +
+  geom_sf(data = ctr_mainstem, color = "#332288") +
+  geom_point_interactive(data = bact_gms_map, aes(x = Lon, y = Lat, color = Wet, data_id = SiteID), size = 4) +
+  geom_point_interactive(data = bact_gms_map, aes(x = Lon, y = Lat, color = Dry, data_id = SiteID), size = 1.5, shape = 15) +
+  binned_scale(
+    aesthetics = "color",
+    scale_name = "stepsn",
+    palette = function(x) c("#117733", "#DDCC77", "#882255"),
+    breaks = c(235, 575),
+    limits = c(0, 2420),
+    show.limits = TRUE,
+    guide = NULL
+  ) +
+  coord_sf(xlim = c(-72.4, -72.7), ylim = c(43, 41.45), expand = FALSE) +
+  theme_void()
+
+gm_chart <- ggplot(bact_gms, aes(x = GeoMean, y = fct_reorder(`Chart Name`, Lat), shape = WeatherStatus, fill = GeoMean), color = "black") +
+  geom_point_interactive(aes(data_id = SiteID), size = 4) +
+  binned_scale(
+    aesthetics = "fill",
+    scale_name = "stepsn",
+    palette = function(x) c("#117733", "#DDCC77", "#882255"),
+    breaks = c(235, 575),
+    limits = c(0, 2420),
+    show.limits = TRUE,
+    guide = NULL
+  ) +
+  scale_shape_manual(name = "Weather", values = c(22, 21)) +
+  geom_vline(aes(xintercept = swimming, linetype = "Swimming"), color = "#DDCC77", size = 1) +
+  geom_vline(aes(xintercept = boating, linetype = "Boating"), color = "#882255", size = 1) +
+  scale_linetype_manual(name = "Thresholds", values = c(2,3)) +
+  labs(
+    title = "Average *E. coli* Levels",
+    subtitle = "2019-2023",
+    x = "Average *E. coli* (MPN/100mL)",
+    y = ""
+  ) +
+  theme_light(
+    #base_size = 18
+    ) +
+  theme(title = ggtext::element_markdown(),
+        axis.title.x = ggtext::element_markdown())
+
+girafe(ggobj = gm_map + gm_chart, 
+       height_svg = 6
+       ) %>%
+  girafe_options(opts_hover(css = "fill:#88CCEE;"))
+
+```
+
+## How often was the Connecticut River swimmable and boatable?
+
+```{R}
+#|label: swimmable
+
+brickdata <- bactdata_tidy %>%
+  mutate("Year" = year(SampleDate),
+         "Level" = case_when(
+           ResultValue < 235 ~ "A",
+           ResultValue > 575 ~ "C",
+           TRUE ~ "B"
+         )) %>%
+  count(Year, WeatherStatus, Level, `Chart Name`) 
+
+ggplot(brickdata, aes(x = WeatherStatus, y = n, fill = Level)) +
+  geom_brick(type = "soft_random") +
+  coord_brick() +
+  scale_fill_manual(
+    values = c("#117733", "#DDCC77", "#882255"),
+    labels = c("A" = "Swimmable & Boatable", "B" = "Boatable Only", "C" = "Unsuitable for Recreation"),
+    name = "",
+  ) +
+  labs(title =  "Number of Samples Meeting Standards During Wet and Dry Weather",
+       y = "",
+       x = "Weather") +
+  theme(legend.position = "bottom") +
+  facet_grid(cols = vars(Year))
+```
+
+```{R}
+#|label: yearly bact graph data
+
+yearly_bact <- bactdata_tidy %>%
+  separate_wider_regex(SiteID, c(State = ".*", "-", River = ".*", "_", Mile = ".*"), cols_remove = FALSE) %>%
+  mutate("SampleWeek" = week(SampleDate),
+         "Year" = year(SampleDate),
+         "Date" = fct_reorder(format(SampleDate, "%b-%d"), SampleDate),
+         "Month" = format(SampleDate, "%B"),
+         Mile = as.numeric(Mile),
+         "ResultwCensor" = case_when(
+           str_detect(ResultDetection, "Above") ~ paste0(">",ResultLimit),
+           str_detect(ResultDetection, "Not") ~ paste0(">",ResultLimit),
+           TRUE ~ as.character(ResultValue)
+         ),
+         "Label" = paste(Date, ", ", ResultwCensor, " MPN/100 mL", sep = "")) %>%
+  filter(River == "CTR")
+
+```
+
+# Review of mainstem results by year
+
+```{R}
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(unique(yearly_bact$Year), \(.year) {
+    knitr::knit_child(
+      input = "_childcodes/_yearly_bactgraph_mainstemreveal.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n')
+```
+
+# Questions?
+![](https://em-content.zobj.net/source/microsoft-teams/363/person-raising-hand_1f64b.png)

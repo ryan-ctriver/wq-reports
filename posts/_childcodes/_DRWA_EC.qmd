@@ -1,0 +1,51 @@
+```{r}
+#|echo: false
+
+graph <- Ecoli %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = Result,
+      middle = geoMean(Result),
+      fill = WeatherStatus,
+      group = paste(ChartName, WeatherStatus),
+      data_id = WeatherStatus,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(fct_reorder(ChartName, Mile, .desc = TRUE), y = Result,
+        shape = SampleYear,
+        group = paste(ChartName, WeatherStatus),
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", Result, " MPN/100mL"
+      ),
+      fill = WeatherStatus,
+      data_id = SampleDate
+        ),
+    position = position_jitterdodge()
+  )+
+  scale_fill_manual(name = "Weather", values = wetdry_colors) +
+  scale_shape_manual(name = "Year", values = c(21:23)) +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  ylim(0, ECmax) +
+  labs(title = .watershed,
+       subtitle = "E. coli Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Number E. coli (MPN/100mL)")
+
+widget <- girafe(ggobj = graph, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.5;")
+       ))
+
+widget
+
+```

@@ -16,6 +16,7 @@ graph <- yearly_bact %>%
        y = "Number *E. coli* (MPN 100/mL)",
        x = "Sampling Week") +
   theme_light() +
+  scale_y_log10() +
   theme(title = ggtext::element_markdown(),
         axis.title.y = ggtext::element_markdown()) +
   facet_wrap(facets = vars(fct_reorder(`Chart Name`, Mile, .desc = TRUE)))

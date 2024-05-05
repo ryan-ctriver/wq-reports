@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Connecticut River Conservancy Water Quality Reports",
     "section": "",
-    "text": "The following posts are the available reports from the Connecticut River Conservancy water quality monitoring program.\n\n\n\n\n\n\n   \n     \n     \n       Order By\n       Default\n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n         \n          Title\n        \n         \n          Author\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n\n\nDate\n\n\nTitle\n\n\nAuthor\n\n\n\n\n\n\nApr 1, 2024\n\n\nDRAFT Connecticut River E. coli Report (2019-2023)\n\n\nRyan O’Donnell\n\n\n\n\nApr 1, 2024\n\n\nDRAFT Samplepalooza Final Report\n\n\nRyan O’Donnell\n\n\n\n\nFeb 1, 2023\n\n\nVolunteer Monitoring for Microplastics in the Connecticut River\n\n\nRyan O’Donnell\n\n\n\n\n\n\nNo matching items"
+    "text": "The following posts are the available reports from the Connecticut River Conservancy water quality monitoring program.\n\n\n\n\n\n\n   \n     \n     \n       Order By\n       Default\n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n         \n          Title\n        \n         \n          Author\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n\n\nDate\n\n\nTitle\n\n\nAuthor\n\n\n\n\n\n\nApr 1, 2024\n\n\nDRAFT Connecticut River E. coli Report (2019-2023)\n\n\nRyan O’Donnell\n\n\n\n\nApr 1, 2024\n\n\nDRAFT Samplepalooza Final Report\n\n\nRyan O’Donnell\n\n\n\n\nMay 6, 2023\n\n\nBacteria Monitoring\n\n\nRyan O’Donnell\n\n\n\n\nFeb 1, 2023\n\n\nVolunteer Monitoring for Microplastics in the Connecticut River\n\n\nRyan O’Donnell\n\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "posts/MP-blog-post.html",
@@ -228,7 +228,7 @@
     "href": "posts/mainstem2023.html#results-by-sample-date-and-location",
     "title": "DRAFT Connecticut River E. coli Report (2019-2023)",
     "section": "Results by Sample Date and Location",
-    "text": "Results by Sample Date and Location\n\n\n\n\n\n\nInteractive Graphic\n\n\n\nThe charts below are interactive. Select a sampling year from the tabs and hover your mouse over a column to see the date, the result, and to highlight other results from the same sampling day.\n\n\n\n20192020202120222023\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe sites are ordered on the chart from upstream to downstream from top left to bottom right. Sites that were not sampled in a year do not appear on the chart."
+    "text": "Results by Sample Date and Location\n\n\n\n\n\n\nInteractive Graphic\n\n\n\nThe charts below are interactive. Select a sampling year from the tabs and hover your mouse over a column (or click if using a touch screen) to see the date, the result, and to highlight other results from the same sampling day.\n\n\n\n20192020202120222023\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe sites are ordered on the chart from upstream to downstream from top left to bottom right. Sites that were not sampled in a year do not appear on the chart."
   },
   {
     "objectID": "posts/mainstem2023.html#complete-results",
@@ -334,5 +334,110 @@
     "title": "DRAFT Samplepalooza Final Report",
     "section": "Loading",
     "text": "Loading\nTributaries each have different flows and watershed size and do not contribute equal amounts of water and therefore equal amounts of nutrients to the system by concentration. Concentration (amount per volume of water) can be multiplied by flow (volume of water per time unit) to get a loading value (amount per time unit) that allows a more accurate comparison of impact among tributaries. Loading values for the mainstem are not presented here due to the complex flow regime of a river that has both significant hydropower regulation and a long tidal portion.\n\n\n\n\n\nConcentration versus Loading in Samplepalooza Tributaries\n\n\n\n\nThis graph shows the concentration versus the loading of each tributary sample. It is interesting to note that most of the sites with the highest loading of each parameter do not have the highest concentrations, especially with chloride. That is because the largest rivers may have lower concentrations due to dilution. That is why it is important to review not only concentration but also loading.\nIf we wanted to direct restoration efforts on particular tributaries, those efforts should be targeted to watersheds that fall in the upper right quadrant of these graphs to have the biggest impact, since they are contributing the largest amount of the parameter to the system with the highest amount in each unit of water.\n\nTributary Loading\n\n\n\n\n\nTributary Loading by Watershed Size\n\n\n\n\nThis chart is arranged by wastershed size instead of geographically; the largest watersheds are at the top of each EcoRegion panel. It presents only the median result, leaving out any exceptionally high or low results at each site and allows for easier comparison among rivers. With no human impacts affecting nutrient or chloride levels in a particular watershed, we would expect to see values decrease with watershed size and lower values in EcoRegion VIII compared to EcoRegion XIV.\nLooking at the results in this way allows us to see which tributaries are contributing more than their “fair share” of each paramter. It is notable that many of the smaller watersheds (such as Mink, Clark, Pecousic, Newton, and Cooley Brooks) are contributing excessive amounts of all three parameters. These tributaries were usually selected because they are in urban areas and so there was an interest in understanding what they were contributing. Smaller, rural tributaries were less likely to be accessible or of concern to be included in this study. Also, the Scantic River and the Farmington River stand out once again for nitrogen and phosphorus, respectively.\n\n\nTributary Loading by State\nOne of the goals of Samplepalooza was to provide a snapshot image of the entire watershed. Just like a picture taken every year at any group gathering, each year is slightly different with different conditions and different tributaries present. You can take a closer look at what each tributary was contributing from each state in the treemaps below.\nPlease note that the colors are not consistent for each state and that it’s impossible to know what the tributaries that were not sampled in each state were contributing via loading. Please refer to the maps above to see the geographic extent sampled each year.\nThe relative size of each box is determined by the estimated loading. Think of these charts as a square pie chart.\n\nNitrogenPhosphorusChloride\n\n\n\n201420152018201920202021\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2014\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2015\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2018\n\n\n\n\nNote: The sample date in 2018 was immediately after a large rainstorm in only the southern half of the region with extremely low flows in the north due to a drought.\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2019\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2020\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Nitrogen, 2021\n\n\n\n\n\n\n\n\n\n\n201420152018201920202021\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2014\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2015\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2018\n\n\n\n\nNote: The sample date in 2018 was immediately after a large rainstorm in only the southern half of the region with extremely low flows in the north due to a drought.\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2019\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2020\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Phosphorus, 2021\n\n\n\n\n\n\n\n\n\n\n2014201520202021\n\n\n\n\n\n\n\nTributary Loading by State - Chloride, 2014\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Chloride, 2015\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Chloride, 2020\n\n\n\n\n\n\n\n\n\n\n\nTributary Loading by State - Chloride, 2021"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#escheria-coli",
+    "href": "posts/23BacteriaPrez.html#escheria-coli",
+    "title": "Bacteria Monitoring",
+    "section": "Escheria coli",
+    "text": "Escheria coli"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#colilert-system",
+    "href": "posts/23BacteriaPrez.html#colilert-system",
+    "title": "Bacteria Monitoring",
+    "section": "Colilert System",
+    "text": "Colilert System\n\nSource:IDEXX"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#contributions",
+    "href": "posts/23BacteriaPrez.html#contributions",
+    "title": "Bacteria Monitoring",
+    "section": "2023 Contributions",
+    "text": "2023 Contributions\n\n\n\nSamples collected in all 4 states\n\n\n\n\n7 monitoring groups contributed\n\n\n\n\n203 locations sampled\n\n\n\n\n1366 results submitted!"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#how-often-was-it-swimmable-in-2023",
+    "href": "posts/23BacteriaPrez.html#how-often-was-it-swimmable-in-2023",
+    "title": "Bacteria Monitoring",
+    "section": "How often was it swimmable in 2023?",
+    "text": "How often was it swimmable in 2023?"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#how-often-was-it-boatable-in-2023",
+    "href": "posts/23BacteriaPrez.html#how-often-was-it-boatable-in-2023",
+    "title": "Bacteria Monitoring",
+    "section": "How often was it boatable in 2023?",
+    "text": "How often was it boatable in 2023?"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#top-10",
+    "href": "posts/23BacteriaPrez.html#top-10",
+    "title": "Bacteria Monitoring",
+    "section": "2023 Top 10",
+    "text": "2023 Top 10\n\n\n\n\n\n\n  \n    \n      Rank\n      Site Name\n      Monitoring Org\n      \n        Average (MPN/100mL)\n      \n    \n    \n      Dry\n      Wet\n    \n  \n  \n    1\nForest Lake\nC4RC\n14.4\n9.1\n    2\nThomas Brook\nFRWA\n3.7\n20.3\n    3\nBenton Brook\nFRWA\n3.1\n27.0\n    4\nFall River\nFRWA\n12.2\n18.1\n    5\nSouth Branch Williams River, Popple Dungeon & Zezza Rds\nCRC\n1.2\n29.3\n    6\nSwift R - First Street access\nC4RC\n16.3\n17.7\n    7\nWest Branch Farmington River, Otis Tannery Rd\nFRWA\n9.1\n33.1\n    8\nConnecticut River at Cromwell Landing\nCRC\n28.7\n16.3\n    9\nUnnamed tributary between big pond and otis reservoir, US\nFRWA\n11.3\n37.4\n    10\nLower Millpond, Millside Park\nCRC\n11.8\n40.8\n  \n  \n    \n      Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking."
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#worst-10",
+    "href": "posts/23BacteriaPrez.html#worst-10",
+    "title": "Bacteria Monitoring",
+    "section": "2023 Worst 10",
+    "text": "2023 Worst 10\n\n\n\n\n\n\n  \n    \n      Rank\n      Site Name\n      Monitoring Org\n      \n        Average (MPN/100mL)\n      \n    \n    \n      Dry\n      Wet\n    \n  \n  \n    124\nSacketts Brook, off Kimball Hill Rd\nCRC\n249.5\n671.1\n    123\nManhan River at Dwyer Conservation Area\nCRC\n204.0\n665.2\n    122\nManhan River off of Mill St\nCRC\n196.2\n604.3\n    121\nWest Branch Farmington River, Sandisfield\nFRWA\n15.6\n585.7\n    120\nPequabuck River, Meadow Road\nFRWA\n304.2\n290.3\n    119\nFort River at Groff Park\nCRC\n184.3\n370.4\n    118\nMill River, Northampton at Rope Swing off Smith College Path\nCRC\n133.5\n418.5\n    117\nSacketts Brook, above WWTF\nCRC\n177.4\n361.8\n    116\nWhetstone Brook, off of Williams St\nCRC\n276.7\n227.9\n    115\nMill Brook, East Street Bridge\nFRWA\n166.1\n308.3\n  \n  \n    \n      Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking."
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#full-ranking",
+    "href": "posts/23BacteriaPrez.html#full-ranking",
+    "title": "Bacteria Monitoring",
+    "section": "Full Ranking",
+    "text": "Full Ranking\n\n\n\n\n\n\n  \n    \n      Rank\n      Site Name\n      Monitoring Org\n      \n        Average (MPN/100mL)\n      \n    \n    \n      Dry\n      Wet\n    \n  \n  \n    1\nForest Lake\nC4RC\n14.4\n9.1\n    2\nThomas Brook\nFRWA\n3.7\n20.3\n    3\nBenton Brook\nFRWA\n3.1\n27.0\n    4\nFall River\nFRWA\n12.2\n18.1\n    5\nSouth Branch Williams River, Popple Dungeon & Zezza Rds\nCRC\n1.2\n29.3\n    6\nSwift R - First Street access\nC4RC\n16.3\n17.7\n    7\nWest Branch Farmington River, Otis Tannery Rd\nFRWA\n9.1\n33.1\n    8\nConnecticut River at Cromwell Landing\nCRC\n28.7\n16.3\n    9\nUnnamed tributary between big pond and otis reservoir, US\nFRWA\n11.3\n37.4\n    10\nLower Millpond, Millside Park\nCRC\n11.8\n40.8\n    11\nBlack River North Branch at Twentyfoot Hole\nBRAT\n21.8\n36.6\n    12\nWardsboro Brook, Wardsboro Center\nCRC\n9.4\n55.0\n    13\nConnecticut River at Northampton DCR/UMASS Boat Dock\nCRC\n16.4\n49.3\n    14\nNorth Branch Ball Mountain Brook, Pikes Falls Swim Hole\nCRC\n4.4\n61.9\n    15\nShales Brook\nFRWA\n20.2\n49.0\n    16\nFarmington River at Town Gardens\nFRWA\n55.5\n14.2\n    17\nQuaboag Rt 67/9 access\nC4RC\n39.5\n32.5\n    18\nMiner Brook\nFRWA\n20.7\n53.1\n    19\nConnecticut River at Pauchaug Brook Boat Launch, Northfield\nCRC\n21.5\n52.8\n    20\nConnecticut River at Haddam, Dock at Haddam Meadows Boat Launch\nCRC\n26.7\n54.0\n    21\nScantic River, Ketch Brook (Rye St)\nSRWA\n25.3\n61.2\n    22\nQuaboag - Lucy Stone Park\nC4RC\n68.0\n19.4\n    23\nConnecticut River at Sunderland Boat Ramp\nCRC\n12.8\n75.5\n    24\nBunnell Brook\nFRWA\n86.7\n4.1\n    25\nSwift-Cold Spring access\nC4RC\n25.5\n68.9\n    26\nBlack River trib (Branch Brook - Buttermilk Falls)\nBRAT\n16.5\n79.0\n    27\nSilver Brook\nFRWA\n7.8\n88.4\n    28\nUnnamed tributary between big pond and otis reservoir, DS\nFRWA\n11.7\n86.8\n    29\nQuaboag-USGS Gage\nC4RC\n55.1\n47.6\n    30\nWethersfield Cove at Cove Park Docks\nCRC\n27.7\n76.0\n    31\nConnecticut River at Jones Ferry River Access Center Boat Launch\nCRC\n20.3\n84.0\n    32\nWare-Danforth Brook-U\nC4RC\n42.5\n62.4\n    33\nConnecticut River at the Rock Dam\nCRC\n13.0\n94.3\n    34\nMouth of Thompsonburg Brook\nCRC\n18.5\n94.5\n    35\nBuck River\nFRWA\n18.5\n97.3\n    36\nFarmington River at Grist Mill Dam\nFRWA\n86.3\n33.7\n    37\nScantic River, Windsorville Pond\nSRWA\n62.4\n59.4\n    38\nConnecticut River at Putney,VT below Sacketts Brook\nPRC\n17.1\n104.8\n    39\nConnecticut River at Middletown, Dock at Riverfront Park\nCRC\n34.8\n88.6\n    40\nFarmington River at Pleasant Street Park Boat Launch\nFRWA\n45.4\n78.2\n    41\nChicopee-Collins Dam\nC4RC\n57.7\n67.4\n    42\nConnecticut River at Rocky Hill, Rocky Hill Boat Launch\nCRC\n34.1\n91.6\n    43\nQuaboag Pond access\nC4RC\n6.9\n119.4\n    44\nChicopee - Lower Red Bridge access\nC4RC\n50.7\n80.1\n    45\nSaxtons River, just above Saxtons River village WWTF\nCRC\n42.5\n93.3\n    46\nWest River, 1/2 way between Londonderry & S Londonerry\nCRC\n20.1\n117.3\n    47\nBlack River at Greven Field\nBRAT\n31.7\n106.7\n    48\nConnecticut River at Pioneer Valley Yacht Club\nCRC\n16.2\n126.7\n    49\nWare-Danforth Brook-M\nC4RC\n55.6\n88.2\n    50\nWest Branch Farmington, Tolland\nFRWA\n16.0\n128.0\n    51\nFarmington River - Satan’s Kingdom State Recreation Area\nFRWA\n39.3\n107.2\n    52\nBlack River at Cavendish Gorge\nBRAT\n25.3\n124.9\n    53\nHubbard River\nFRWA\n17.9\n134.3\n    54\nEast Putney Brook, River Rd S culvert swimming hole\nCRC\n35.2\n121.0\n    55\nFarmington River at River Street Park\nFRWA\n27.0\n133.2\n    56\nWare R - Old Furnace\nC4RC\n98.3\n66.7\n    57\nConnecticut River at Barton Cove, Gill at State Boat Ramp\nCRC\n36.8\n129.4\n    58\nConnecticut River at Glastonbury, Dock at Glastonbury Boat Launch\nCRC\n28.3\n140.1\n    59\nBroad Brook, near Fort Dummer State Park\nCRC\n15.4\n157.4\n    60\nSaxtons River, Stickney's field swim hole\nCRC\n29.2\n145.6\n    61\nAmethyst Brook\nCRC\n48.2\n127.4\n    62\nConnecticut River at Windsor Meadows State Park\nCRC\n19.4\n157.2\n    63\nSandy Brook\nFRWA\n27.7\n151.5\n    64\nConnecticut River at East Hartford, Dock at Great River Park\nCRC\n31.5\n151.2\n    65\nScantic River, King Road\nSRWA\n43.2\n140.7\n    66\nQuaboag Rt 32\nC4RC\n112.4\n72.1\n    67\nClam River\nFRWA\n16.7\n168.2\n    68\nWest Branch Farmington River, Otis Rte 8 & N Main\nFRWA\n21.8\n164.0\n    69\nWare R - Grenville Park\nC4RC\n99.2\n87.9\n    70\nMill River, Upstream of Leeds Dam\nCRC\n56.8\n131.1\n    71\nBanas Farm-Ware R\nC4RC\n78.0\n110.4\n    72\nChicopee - Putts Bridge access\nC4RC\n53.0\n136.2\n    73\nFarmington River Burlington Farmington Canal Heritage Trail\nFRWA\n188.2\n12.8\n    74\nScantic River, Somersville Mill Pond\nSRWA\n106.4\n94.7\n    75\nConnecticut River at Pynchon Point Park\nCRC\n43.8\n158.8\n    76\nState St\nC4RC\n98.5\n104.8\n    77\nWare River Park-Above New Furnace\nC4RC\n122.3\n81.1\n    78\nScantic River, Brood Brook Stream/ East Road\nSRWA\n90.4\n115.1\n    79\nWhetstone Brook, Meadowbrook Rd VT Land Trust Farm Parcel\nCRC\n67.4\n140.3\n    80\nWare-Church St\nC4RC\n122.2\n87.7\n    81\nConnecticut River at North Riverfront Park\nCRC\n45.1\n175.4\n    82\nScantic River, Kibbe Grove Road\nSRWA\n78.3\n142.3\n    83\nFarmington River at Route 187 Bridge\nFRWA\n21.5\n202.7\n    84\nPhelps Brook, Rte 75 at MDC Poquonick\nFRWA\n111.8\n113.5\n    85\nScantic River, Broad Brook (Mill St.)\nSRWA\n88.7\n138.5\n    86\nConnecticut River at Berchulski Fisherman Access\nCRC\n50.5\n179.9\n    87\nScantic River, Four Bridges Road\nSRWA\n131.4\n102.9\n    88\nScantic River, Old Melrose Bridge\nSRWA\n81.2\n154.2\n    89\nWest River, Rowes Rd downstream of Thompsonburg Brook\nCRC\n24.3\n211.4\n    90\nBlack River at Tolles Dam\nBRAT\n33.7\n204.4\n    91\nStevens Rd\nC4RC\n169.4\n72.9\n    92\nScantic River, Harrington Brook (Route 140)\nSRWA\n113.7\n130.6\n    93\nFarmington River at Paine Boathouse crew dock\nFRWA\n81.1\n164.6\n    94\nScantic River, Powder Hollow\nSRWA\n87.6\n170.1\n    95\nWhetstone Brook, Brattleboro Farmers Market\nCRC\n89.7\n174.9\n    96\nScantic River, Filterbeds\nSRWA\n76.1\n190.5\n    97\nScantic River, Omelia Bridge\nSRWA\n143.2\n125.1\n    98\nLaviolette Field\nC4RC\n138.9\n144.1\n    99\nDanforth Brook-\nC4RC\n73.6\n216.6\n    100\nWest River, swimming hole at West River Park\nCRC\n111.8\n182.1\n    101\nSaxtons River, Sandy Beach swim hole just south of Bellows Falls\nCRC\n73.0\n225.1\n    102\nScantic River, Rt 83\nSRWA\n105.7\n204.8\n    103\nConnecticut River at Brunelles Marina\nCRC\n177.2\n144.0\n    104\nQuaboag Water St Palmer\nC4RC\n168.1\n158.1\n    105\nQuaboag Rt 20\nC4RC\n145.7\n198.5\n    106\nSalmon Brook, Granbrook Park\nFRWA\n104.9\n246.8\n    107\nConnecticut River Oxbow, Easthampton at State Boat Ramp\nCRC\n109.6\n243.7\n    108\nWest River, just upstream of West River Marina\nCRC\n152.6\n207.8\n    109\nScantic River, Durkee Road\nSRWA\n100.1\n261.1\n    110\nWhetstone Brook, Behind Studio for the Arts\nCRC\n153.8\n211.6\n    111\nMill River near Hinckley Street\nCRC\n122.8\n266.9\n    112\nRoaring Brook, Cottage Street Bridge\nFRWA\n404.8\n25.8\n    113\nSalmon Brook East Branch\nFRWA\n145.7\n320.1\n    114\nWhetstone Brook, across from the Brattleboro Food Coop\nCRC\n152.6\n313.9\n    115\nMill Brook, East Street Bridge\nFRWA\n166.1\n308.3\n    116\nWhetstone Brook, off of Williams St\nCRC\n276.7\n227.9\n    117\nSacketts Brook, above WWTF\nCRC\n177.4\n361.8\n    118\nMill River, Northampton at Rope Swing off Smith College Path\nCRC\n133.5\n418.5\n    119\nFort River at Groff Park\nCRC\n184.3\n370.4\n    120\nPequabuck River, Meadow Road\nFRWA\n304.2\n290.3\n    121\nWest Branch Farmington River, Sandisfield\nFRWA\n15.6\n585.7\n    122\nManhan River off of Mill St\nCRC\n196.2\n604.3\n    123\nManhan River at Dwyer Conservation Area\nCRC\n204.0\n665.2\n    124\nSacketts Brook, off Kimball Hill Rd\nCRC\n249.5\n671.1\n  \n  \n    \n      Sites that were not sampled at least twice each in wet and dry weather conditions were excluded from this ranking."
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#year-overview",
+    "href": "posts/23BacteriaPrez.html#year-overview",
+    "title": "Bacteria Monitoring",
+    "section": "5 Year Overview",
+    "text": "5 Year Overview"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#how-often-was-the-connecticut-river-swimmable-and-boatable",
+    "href": "posts/23BacteriaPrez.html#how-often-was-the-connecticut-river-swimmable-and-boatable",
+    "title": "Bacteria Monitoring",
+    "section": "How often was the Connecticut River swimmable and boatable?",
+    "text": "How often was the Connecticut River swimmable and boatable?"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#section",
+    "href": "posts/23BacteriaPrez.html#section",
+    "title": "Bacteria Monitoring",
+    "section": "2019",
+    "text": "2019"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#section-1",
+    "href": "posts/23BacteriaPrez.html#section-1",
+    "title": "Bacteria Monitoring",
+    "section": "2020",
+    "text": "2020"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#section-2",
+    "href": "posts/23BacteriaPrez.html#section-2",
+    "title": "Bacteria Monitoring",
+    "section": "2021",
+    "text": "2021"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#section-3",
+    "href": "posts/23BacteriaPrez.html#section-3",
+    "title": "Bacteria Monitoring",
+    "section": "2022",
+    "text": "2022"
+  },
+  {
+    "objectID": "posts/23BacteriaPrez.html#section-4",
+    "href": "posts/23BacteriaPrez.html#section-4",
+    "title": "Bacteria Monitoring",
+    "section": "2023",
+    "text": "2023"
   }
 ]

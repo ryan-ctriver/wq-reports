@@ -1,0 +1,379 @@
+---
+title: "DRAFT Deerfield River Watershed (2021-2023)"
+author: "Ryan O'Donnell"
+desription: "Three year summary of water quality results collected by Deerfield River Watershed Association volunteers"
+date: "4/15/2024"
+format:
+  html:
+    df-print: paged
+    toc: true
+    echo: false
+    warning: false
+categories:
+  - Deerfield River
+  - Green River
+  - DRWA
+  - Chloride
+  - Nitrogen
+  - Phosphorus
+  - Bacteria
+  - E. coli
+  - Turbidity
+  - Conductivity
+  - Tributaries
+  - 2021
+  - 2022
+  - 2023
+---
+
+```{R}
+#|label: library set-up
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(htmlwidgets)
+library(gt)
+library(EnvStats)
+
+```
+
+```{R}
+#| label: data load in and set up
+
+# Document read in
+data_21_22 <- read_xlsx("_data/21-22_DRWAResults_Checked.xlsx")
+data_23 <- read_xlsx("_data/23_CompiledResults_FlowsIncluded.xlsx")
+allsiteinfo <- read_xlsx("C:/WorkingData/R/CRC-WQ-Data/InputData/allsiteinfo.xlsx")
+
+# Connect data
+
+data_compiled <- data_23 %>%
+  # filter to DRWA only
+  filter(str_detect(Project, "DRWA")) %>%
+  # connect to 21-22 data
+  bind_rows(., data_21_22) %>%
+  # add site info
+  left_join(., allsiteinfo, by = "SiteID") %>%
+  # set up data for use
+  mutate(
+    SampleDate = ymd(SampleDate),
+    "SiteID2" = `SiteID`,
+    "Result" = case_when(
+      str_detect(ResultDetectionValue, "Not Detected") ~ `ResultLimitMeasure`/2,
+      str_detect(ResultDetectionValue, "Above") ~ `ResultLimitMeasure`,
+      is.na(ResultDetectionValue) ~ `ResultValue`),
+    ParameterName = case_when(
+      str_detect(ParameterName, "Chloride") ~ "Total Chloride",
+      TRUE ~ ParameterName
+    )
+  ) %>%
+  # split Site IDs to relevant info
+  separate(`SiteID2`, c("State", "River", "Mile"), sep = "-|_") %>%
+  arrange(SampleDate) %>%
+  # set up columns for use
+  mutate(Mile = as.numeric(Mile),
+         Lat = as.numeric(Lat),
+         Lon = as.numeric(Lon),
+    "Group" = case_when(
+      str_detect(Watershed.y, "Deerfield") & str_detect(River, "NBD") ~ "North Branch Deerfield River",
+      str_detect(Watershed.y, "Deerfield") & str_detect(River, "DFR") ~ "Deerfield River Mainstem",
+      str_detect(Watershed.y, "Green") ~ "Green River",
+      str_detect(Watershed.y, "Trib") ~ "Other Tributaries"),
+      "ChartName" = str_wrap(`Chart Name`, width = 10),
+    "SampleYear" = as_factor(as.character(year(SampleDate))),
+    FlowCondition = factor(FlowCondition, levels = c("Low", "Moderate", "High"))) %>%
+  # select relevant columns for this report
+  select(c(
+    "SiteID", "SampleDate", "ParameterName", "Result", "WeatherStatus", "FlowCondition", "Lat", "Lon", "Chart Name", "ChartName", "Group", "Mile", "SampleYear")) %>%
+  distinct()
+
+report_siteinfo <- data_compiled %>%
+  distinct(pick(c("SiteID", "Chart Name", "Lat", "Lon", "Group"))) %>%
+  mutate("MapName" = case_when(
+    str_detect(Group, "Other") ~ `Chart Name`,
+    str_detect(Group, "North Branch") ~ paste0("N Br Deerfield: ", `Chart Name`),
+    str_detect(Group, "Mainstem") ~ paste0("Deerfield: ", `Chart Name`),
+    str_detect(Group, "Green") ~ paste0("Green: ", `Chart Name`)
+    )
+  )
+
+watersheds <- c("North Branch Deerfield River", "Deerfield River Mainstem", "Green River", "Other Tributaries")
+LPP_watersheds <-  c("North Branch Deerfield River", "Green River", "Other Tributaries")
+
+wetdry_colors <- c("Dry" = "#44AA99", "Wet" = "#554499")
+lmh_colors <- c("Low" = "#88CCEE", "Moderate" = "#DDCC77", "High" = "#CC6677")
+standardcolor <- "#AA4499"
+standardcolor2 <- "#442222"
+```
+
+# Monitoring Background
+
+## Monitoring Locations
+::: callout-tip
+## Interactive Map
+
+The map below is interactive. Hover your mouse (or click if using a touch screen) over a point, line, or shape on the map to see more information about that feature.
+:::
+```{R}
+#| label: site map set-up
+#|output: FALSE
+#|warning: FALSE
+
+watershed_states <- map_data("state") %>% 
+  filter(region %in% c("massachusetts", "vermont")) %>% 
+           filter(!subregion %in% c("martha's vineyard", "nantucket"))
+
+# map files
+rivers <- st_read("_data/_maps/deerfieldandtribslines.shp", quiet = TRUE) %>%
+  fortify()
+
+reservoirs <- st_read("_data/_maps/deerfield_reservoirs.shp", quiet = TRUE) %>%
+  fortify()
+
+watershedoutline <- st_read("_data/_maps/deerfield_watershed.shp", quiet = TRUE) %>%
+  fortify()
+
+ctr_mainstem <- st_read("_data/_maps/ctr-mainstem-line.shp", quiet = TRUE) %>%
+  fortify()
+
+```
+
+```{R}
+#| label: site map
+
+
+sitemap <- ggplot() +
+  geom_polygon_interactive(data = watershed_states, aes(x = long, y = lat, group = region, tooltip = str_to_title(region)), color = "gray20", linetype = "dotted", fill="#44AA99", alpha=0.5) +
+  geom_sf_interactive(data = watershedoutline, aes(tooltip = "Deerfield Watershed"), fill = "#117733", color = "white", alpha = 0.5) +
+  geom_sf_interactive(data = rivers, aes(tooltip = GNIS_NAME, data_id = GNIS_NAME), color = "#332288") +
+  geom_sf_interactive(data = reservoirs, aes(tooltip = GNIS_NAME, data_id = GNIS_NAME), fill = "#332288", color = "#332288") +
+  geom_sf(data = ctr_mainstem, color = "#332288", linewidth = 1.2) +
+  geom_point_interactive(data = report_siteinfo, aes(x = Lon, y = Lat, tooltip = MapName, data_id = SiteID), fill = "white", size = 2, shape = 21) +
+  coord_sf(xlim = c(min(report_siteinfo$Lon) - 0.2, max(report_siteinfo$Lon) + 0.05), ylim = c(min(report_siteinfo$Lat) - 0.07, max(report_siteinfo$Lat) + 0.14), expand = FALSE) +
+  theme_void() +
+  labs(subtitle = "DRWA Sites Monitored 2021-2023")
+
+girafe(ggobj = sitemap,
+       height_svg = 5,
+       options = list(
+         opts_hover(css = "fill:cyan;stroke:white;"),
+         opts_zoom(min = 0.5, max = 10)
+       ))
+
+```
+
+# Results by Parameter
+
+::: panel-tabset
+## *E. coli*
+
+
+### About *E. coli*
+
+*Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals (including mammals, birds, and humans) that is excreted when they poop. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator organism for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
+
+::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
+![Source: WikiCommons](images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
+:::
+The Environmental Protection Agency (EPA) has made [water quality recommendations](https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods) for levels of *E. coli* to determine suitability for recreation. These are broken down into primary and secondary contact recreation. Primary contact means there is a high likelihood of accidentally ingesting water due to being fully immersed in the water such as during swimming, water skiing, or surfing. Secondary contact means there is a lower likelihood of accidentally swallowing water due to water spray or brief unintended immersion such as boating, fishing, or wading. In this report and throughout CRC's sharing of bacteria data, "swimming" is shorthand for primary contact and "boating" is shorthand for secondary contact.
+
+### Results
+```{R}
+#| label: E.coli setup
+
+swim_limit <- 235
+
+Ecoli <- data_compiled %>%
+  filter(ParameterName == "E. coli" & SiteID != "VT-NBD_12.5")
+
+ECmax <- max(Ecoli$Result)
+
+```
+
+```{R}
+#| label: Ecoli graphs
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_DRWA_EC.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+## Total Nitrogen
+
+### About Nitrogen
+
+Total nitrogen (TN) tests for nitrogen in all its forms, including nitrate (NO3-), nitrite (NO2-), ammonium (NH4+), and as part of organic matter. Nitrogen is an essential nutrient for plants and can be found in the atmosphere as well as all living beings. It is also a key component of many fertilizers. An overabundance of nitrogen in our waterways can contribute to eutrophication (overgrowth of algae) and anoxia (lack of oxygen) in saltwater systems, such as Long Island Sound which is where all the water from the Deerfield watershed ends up eventually. Nitrogen levels can also contribute to eutrophication in freshwater systems that also have high phosphorus levels.
+
+There is no numerical state standard for nitrogen in Massachusetts and the standard in Vermont is a very lax 5.0 mg-N/L of water. No sites that we test come close to exceeding that standard. The EPA recommends a limit of 0.38 mg-N/L based on what natural levels would be in this region. We choose to compare our results to the EPA suggested standard.
+
+### Results
+```{R}
+#| label: TN setup
+
+TN_standard <- 0.38
+
+TN <- data_compiled %>%
+  filter(ParameterName == "Total Nitrogen")
+
+TNmax <- max(TN$Result, na.rm = TRUE)
+```
+
+```{R}
+#| label: TN graphs
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(LPP_watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_DRWA_TN.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+## Total Phosphorus
+
+### About Phosphorus
+
+Total phosphorus (TP) tests for phosphorus in all its forms, including organic and inorganic phosphates (PO4-3). Organic phosphates are those that are bound to plant or animal tissue and formed primarily through biological processes, but they may occur from the breakdown of organic pesticides. Inorganic phosphates include orthophosphates, produced in natural processes and found in sewage, and polyphosphates, used in treating boiler waters and in detergents. An overabundance of phosphorus in our waterways can contribute to toxic algae blooms, eutrophication, and anoxia in freshwater systems, such as lakes and ponds. Phosphorus levels can also contribute to eutrophication in saltwater systems that also have high nitrogen levels.
+
+There is no numerical state standard for phosphorus in Massachusetts and the standard in Vermont is based on gradient and temperature. All except one of the sites are high or medium gradient cold-water streams which have a standard of 9 μg-P/L for Class A(1) and B(1) waters and 15 μg-P/L for Class B(2) waters. Currently, Vermont's Deerfield watershed streams are classified as B(2); the Vermont portion of the Green River may be reclassified to A(1). Both standards are shown on the charts below.
+
+### Results
+
+```{R}
+#| label: TP setup
+
+TP_standardA1 <- 9
+TP_standardB2 <- 15
+
+TP <- data_compiled %>%
+  filter(ParameterName == "Total Phosphorus")
+
+TPmax <- max(TP$Result, na.rm = TRUE)
+```
+
+```{R}
+#| label: TP graphs
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(LPP_watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_DRWA_TP.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+## Turbidity
+
+### About Turbidity
+
+Turbidity is a measure of how murky or cloudy water is.  Clay, silt, finely divided inorganic and organic matter, algae, soluble colored organic compounds, and microscopic organisms all contribute to how turbid water is. Low and slow flows in streams tend to be less turbid while high flows after rain events are usually more turbid. Turbidity is a measured by the intensity of light scattered by particles suspended in a water sample. It is measured in nephometric turbidity units (NTU). Typically, low flowing, clear water have turbidity values of 10 NTU or lower. 
+
+The Massachusetts standard for turbidity is stated as “These waters shall be free from color and turbidity in concentrations or combinations that are aesthetically objectionable or would impair any use assigned to this Class.” Vermont water quality standards state that average annual turbidity should not exceed 10 NTU in Class A and cold water fishery Class B waters; the average should not exceed 25 NTU in warm water fishery Class B waters.
+
+
+### Results
+
+```{R}
+#| label: Turb setup
+
+Turb_standardA <- 10
+Turb_standardB <- 25
+
+Turb <- data_compiled %>%
+  filter(ParameterName == "Turbidity")
+
+Turbmax <- max(Turb$Result, na.rm = TRUE)
+```
+
+```{R}
+#| label: Turb graphs
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_DRWA_TURB.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+## Chloride & Conductivity
+
+### About Chloride
+
+Chlorides (Cl) are naturally found in both salt and fresh water environments. Chloride ions separate from chloride salts, such as sodium chloride (table salt), potassium chloride, or magnesium chloride. Concentrations of chlorides in the environment have increased sharply since the widespread adoption of using road salts as a deicer starting in the 1970s. Chlorides can also come from water softener discharge, wastewater effluent, fertilizers, or dust inhibitors used on dirt roads in the summer. Chloride concentrations tend to be higher in areas with lots of pavement and other treated surfaces. High chloride concentrations in freshwater systems can stress or kill aquatic plants and animals.
+
+There are no standards for chlorides in either Vermont or Massachusetts. US EPA has recommended that waters not exceed 860 mg/L for acute toxicity or 230 mg/L for chronic toxicity.
+
+### About Conductivity
+
+Specific conductivity (also known as specific conductance) is a measure of how well water conducts electricity. Conductivity is easy to test for and gives a broad look at potential water quality issues. It can be affected by the underlying geology and soil (ions dissolved out of rocks and soil), acid mine drainage (variety of metals and other contaminants), agricultural runoff (including nitrates and phosphates), and road runoff (automobile fluids and road salt). Sudden changes in conductivity could indicate a change in water quality. In the northeastern United States, conducitivity levels are primarily influenced by road salts
+
+Conductivity is not in itself regulated but is a good indicator of road salt usage or other water quality problems.
+
+### Results
+
+Because these two parameters are so closely related, the two charts are shown next to each other below.
+
+```{R}
+#| label: clcond setup
+
+#cl_standard <- 10
+#Turb_standardB <- 25
+
+clcond <- data_compiled %>%
+  filter(ParameterName == "Specific Conductance" | ParameterName == "Total Chloride") %>%
+  pivot_wider(names_from = ParameterName, values_from = Result)
+
+clmax <- max(clcond$`Total Chloride`, na.rm = TRUE)
+condmax <- max(clcond$`Specific Conductance`, na.rm = TRUE)
+```
+
+```{R}
+#| label: clcond graphs
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_DRWA_CL_cond.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+:::

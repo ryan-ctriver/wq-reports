@@ -1,0 +1,92 @@
+
+```{r}
+#|echo: false
+
+graph1 <- clcond %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = `Specific Conductance`,
+      middle = mean(`Specific Conductance`),
+      fill = FlowCondition,
+      group = interaction(FlowCondition, ChartName),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(fct_reorder(ChartName, Mile, .desc = TRUE), y = `Specific Conductance`,
+        shape = SampleYear,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", `Specific Conductance`, " \U03BCS/cm"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    position = position_jitterdodge()
+  )+
+  scale_fill_manual(name = "Flow Level", values = lmh_colors) +
+  scale_shape_manual(name = "Year", values = c(21:23)) +
+  ylim(0, condmax) +
+  #coord_flip() +
+  #theme(axis.text.y = element_text(size = 6)) +
+  labs(title = .watershed,
+       subtitle = "Specific Conductance Results by Sampling Location and Flow",
+       #x = "Sampling Location",
+       y = "Specific Conductance (\U03BCS/cm)")
+
+graph2 <- clcond %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = `Total Chloride`,
+      middle = mean(`Total Chloride`),
+      fill = FlowCondition,
+      group = interaction(FlowCondition, ChartName),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(fct_reorder(ChartName, Mile, .desc = TRUE), y = `Total Chloride`,
+        shape = SampleYear,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", `Total Chloride`, " mg-Cl/L"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    position = position_jitterdodge()
+  )+
+  scale_fill_manual(name = "Flow Level", values = lmh_colors) +
+  scale_shape_manual(name = "Year", values = c(21:23)) +
+  ylim(0, clmax) +
+  #coord_flip() +
+  #theme(legend.position = "none",
+        #axis.text.y = element_text(size = 6)) +
+  labs(subtitle = "Chloride Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Total Chloride (mg-Cl/L)")
+
+widget <- girafe(ggobj = graph1 / graph2, 
+                 height_svg = 8,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.5;")
+       ))
+
+widget
+
+```
