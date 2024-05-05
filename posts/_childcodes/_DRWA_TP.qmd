@@ -1,0 +1,53 @@
+
+```{r}
+#|echo: false
+
+graph <- TP %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = Result,
+      middle = mean(Result),
+      fill = FlowCondition,
+      group = interaction(FlowCondition, ChartName),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(fct_reorder(ChartName, Mile, .desc = TRUE), y = Result,
+        shape = SampleYear,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", Result, " \U03BCg-P/L"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    position = position_jitterdodge()
+  )+
+  scale_fill_manual(name = "Flow Level", values = lmh_colors) +
+  scale_shape_manual(name = "Year", values = c(21:23)) +
+  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A/B(1) Standard"), color = standardcolor) +
+  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2) Standard"), color = standardcolor2) +
+  scale_linetype_manual(name = "", values = c(2:3)) +
+  scale_y_log10(limits = c(1, TPmax)) +
+  labs(title = .watershed,
+       subtitle = "Total Phosphorus Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Total Phosphorus (\U03BCg-P/L)")
+
+widget <- girafe(ggobj = graph, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.5;")
+       ))
+
+widget
+
+```

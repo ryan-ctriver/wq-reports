@@ -4,9 +4,11 @@ listing:
   contents: posts
   sort: "date desc"
   type: table
-  categories: true
+  categories: cloud
   fields: [date, title, author]
   table-hover: true
+  exclude: 
+    format: revealjs
 page-layout: full
 ---
 

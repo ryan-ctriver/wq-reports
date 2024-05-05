@@ -101,7 +101,7 @@ Throughout the season, results are uploaded to [*Is It Clean?/¿Está Limpio?*](
 ![Source: Emojipedia](images/pile-of-poo.gif){fig-alt="Animated pile of poo emoji" fig-align="right" width="150"}
 :::
 
-*Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals including mammals, birds, and humans. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
+*Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals (including mammals, birds, and humans) that is excreted when they poop. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator organism for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
 
 ::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
 ![Source: WikiCommons](images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
@@ -113,7 +113,7 @@ The Environmental Protection Agency (EPA) has made [water quality recommendation
 ::: callout-tip
 ## Interactive Graphic
 
-The graphic below is interactive. Hover your mouse over a point on the chart to highlight its counterpart on the map.
+The graphic below is interactive. Hover your mouse over a point (or click if using a touch screen) on the chart to highlight its counterpart on the map.
 :::
 
 ```{R}
@@ -215,7 +215,7 @@ Each brick on the chart above represents one sample collected and is colored by 
 ::: callout-tip
 ### Interactive Graphic
 
-The charts below are interactive. Select a sampling year from the tabs and hover your mouse over a column to see the date, the result, and to highlight other results from the same sampling day.
+The charts below are interactive. Select a sampling year from the tabs and hover your mouse over a column (or click if using a touch screen) to see the date, the result, and to highlight other results from the same sampling day.
 :::
 
 ::: panel-tabset
