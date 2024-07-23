@@ -4,10 +4,13 @@ subtitle: "*Is It Clean* 2023 Wrap-Up & Five Year Mainstem Review"
 author: "Ryan O'Donnell"
 institute: "Connecticut River Conservancy"
 date: "May 6, 2023"
+hidden: true
 format:
   revealjs:
     theme: moon
     transition: slide
+categories: 
+  - presentation
 ---
 
 ```{R}

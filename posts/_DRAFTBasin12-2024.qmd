@@ -1,0 +1,201 @@
+---
+title: "DRAFT 2024 Basin 12 Water Quality Review"
+author: "Ryan O'Donnell"
+desription: "Three year summary of water quality results collected by Deerfield River Watershed Association volunteers"
+date: "7/15/2024"
+format:
+  html:
+    df-print: paged
+    toc: true
+    echo: false
+    warning: false
+categories:
+  - Deerfield River
+  - North River
+  - Green River
+  - Beaver Brook
+  - Whetstone Brook
+  - Broad Brook
+  - Chloride
+  - Nitrogen
+  - Phosphorus
+  - Bacteria
+  - E. coli
+  - Turbidity
+  - Conductivity
+  - Tributaries
+  - Basin 12
+  - Vermont
+---
+
+```{r library}
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(htmlwidgets)
+library(gt)
+library(EnvStats)
+
+```
+
+```{r data}
+
+Basin12 <- read_xlsx("_data/24Basin12Data.xlsx") %>%
+  separate(`SiteID`, c("State", "River", "Mile"), sep = "-|_", remove = FALSE) %>%
+  drop_na(ResultValue) %>%
+  mutate(
+    Mile = as.numeric(Mile),
+    ResultCalc = case_when(
+      str_detect(ResultValue, "<") ~ parse_number(ResultValue)/2,
+      str_detect(ResultValue, ">") ~ parse_number(ResultValue),
+      TRUE ~ as.numeric(ResultValue)
+    ),
+    Group = case_when(
+      River == "BRD" ~ "CT River Direct",
+      River == "BVR" ~ "N. Br. Deerfield Trib",
+      River == "EBN" ~ "North River",
+      River == "NBD" ~ "North Branch Deerfield River",
+      River == "NWT" ~ "CT River Direct",
+      River == "ELS" ~ "N. Br. Deerfield Trib",
+      River == "WET" ~ "Whetstone Brook",
+      River == "GRN" ~ "Green River",
+      River == "COB" ~ "N. Br. Deerfield Trib",
+      River == "PND" ~ "Green River Trib",
+      River == "HBG" ~ "Green River Trib",
+      River == "NEG" ~ "N. Br. Deerfield Trib"
+    ),
+    WeatherStatus = case_when(
+      WeatherStatus == "Y" ~ "Wet",
+      WeatherStatus == "N" ~ "Dry",
+      TRUE ~ WeatherStatus
+    ),
+    "SampleYear" = as.character(year(SampleDate))
+    ) %>%
+  rename(ChartName = `Chart Name`)
+
+wetdry_colors <- c("Dry" = "#44AA99", "Wet" = "#554499")
+lmh_colors <- c("Low" = "#88CCEE", "Moderate" = "#DDCC77", "High" = "#CC6677")
+standardcolor <- "#AA4499"
+standardcolor2 <- "#442222"
+```
+
+INTRO
+
+# Basin 12 Overview
+
+## Volunteer Water Quality Monitoring History
+
+### Monitoring Locations
+
+### Parameters
+
+# Monitoring Results
+
+::: panel-tabset
+
+## Bacteria
+
+```{r bacteria set-up}
+
+bacteria_data <- Basin12 %>%
+  filter(Parameter == "E. coli")
+
+ECmax <- max(bacteria_data$ResultCalc)
+
+swim_limit = 235
+
+```
+
+```{r bacteria test chart}
+
+graph <- bacteria_data %>%
+  filter(Group == "Whetstone Brook") %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = geoMean(ResultCalc),
+      fill = WeatherStatus,
+      group = paste(ChartName, WeatherStatus),
+      data_id = WeatherStatus,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        
+        group = paste(ChartName, WeatherStatus),
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " MPN/100mL"
+      ),
+      fill = WeatherStatus,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  scale_fill_manual(name = "Weather", values = wetdry_colors) +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  ylim(0, ECmax) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  labs(title = "Whetstone Brook",
+       subtitle = "E. coli Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Number E. coli (MPN/100mL)")
+
+widget <- girafe(ggobj = graph, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget
+
+cat("Discussion TBD")
+
+```
+```{r bact graph by year}
+bacteria_data %>%
+  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
+  summarise("GM" = geoMean(ResultCalc)) %>%
+  filter(Group == "Whetstone Brook") %>%
+  ggplot() +
+  geom_line(aes(x = Mile, y = GM, color = SampleYear)) +
+  geom_point(aes(x = Mile, y = GM, color = SampleYear)) +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  scale_x_reverse() +
+  facet_wrap(~WeatherStatus)
+
+
+```
+## Nutrients
+
+## Chloride/Conductivity
+
+## Turbidity
+
+## Discussion
+
+## 
+:::
+
+# Next Steps
+
+# Complete Results

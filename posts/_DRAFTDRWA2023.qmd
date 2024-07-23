@@ -1,8 +1,8 @@
 ---
-title: "DRAFT Deerfield River Watershed (2021-2023)"
+title: "DRAFT Deerfield River Watershed Water Quality (2021-2023)"
 author: "Ryan O'Donnell"
 desription: "Three year summary of water quality results collected by Deerfield River Watershed Association volunteers"
-date: "4/15/2024"
+date: "7/2/2024"
 format:
   html:
     df-print: paged
@@ -118,12 +118,18 @@ standardcolor2 <- "#442222"
 
 # Monitoring Background
 
+The Deerfield River Watershed Association (DRWA) monitoring program first begin in 2017. This report is a review of the past three years of data collected by volunteers at sites throughout Deerfield watershed, including its tributaries, in both Vermont and Massachusetts. It was conducted with the support of the Vermont Department of Environmental Concervation's (VT DEC) [LaRosa Partnership Program](https://dec.vermont.gov/watershed/map/monitor/larosa), Massachusetts Department of Environmental Protection (Mass DEP) [Water Quality Monitoring Grant](https://www.mass.gov/info-details/grants-financial-assistance-watersheds-water-quality#water-quality-monitoring-grant-program-), the [Connecticut River Conservancy (CRC)](www.ctriver.org), the [Green River Watershed Alliance (GRWA)](https://www.greenriverwa.org/), and DRWA volunteers.
+
+The goals of this watershed monitoring program are to engage volunteers and educate our members by collecting quality assured data about the rivers in our watershed. This data will be used to provide recreational safety information, guide restoration efforts by DRWA, CRC, or other partners, and to assist VT DEC and MassDEP with their assessments.
+
 ## Monitoring Locations
+
 ::: callout-tip
 ## Interactive Map
 
 The map below is interactive. Hover your mouse (or click if using a touch screen) over a point, line, or shape on the map to see more information about that feature.
 :::
+
 ```{R}
 #| label: site map set-up
 #|output: FALSE
@@ -177,7 +183,6 @@ girafe(ggobj = sitemap,
 ::: panel-tabset
 ## *E. coli*
 
-
 ### About *E. coli*
 
 *Escherichia coli* is a coliform bacteria found in the guts of all warm-blooded animals (including mammals, birds, and humans) that is excreted when they poop. Not all *E. coli* is pathogenic (illness causing), but some strains can be extremely harmful. It is used an indicator organism for fecal contamination of rivers and lakes. Because it is found in the gut, abundant *E. coli* numbers in water mean there is a higher likelihood that the water is contaminated with human or animal waste and that there is an increased risk of waterborne illness. This could be from one of the harmful strains of *E. coli* or other pathogenic organisms that are often found in human or animal waste but are much more difficult or costly to test for.
@@ -185,9 +190,11 @@ girafe(ggobj = sitemap,
 ::: {style="float: left; position: relative; top: 0px; padding: 30px;"}
 ![Source: WikiCommons](images/Escherichia_coli_wikicommons.jpg){fig-alt="Single E. coli organism colored purple" fig-align="right" width="250"}
 :::
+
 The Environmental Protection Agency (EPA) has made [water quality recommendations](https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods) for levels of *E. coli* to determine suitability for recreation. These are broken down into primary and secondary contact recreation. Primary contact means there is a high likelihood of accidentally ingesting water due to being fully immersed in the water such as during swimming, water skiing, or surfing. Secondary contact means there is a lower likelihood of accidentally swallowing water due to water spray or brief unintended immersion such as boating, fishing, or wading. In this report and throughout CRC's sharing of bacteria data, "swimming" is shorthand for primary contact and "boating" is shorthand for secondary contact.
 
 ### Results
+
 ```{R}
 #| label: E.coli setup
 
@@ -216,6 +223,7 @@ res <- purrr::map_chr(watersheds, \(.watershed) {
 cat(res, sep = '\n\n')
 ```
 
+
 ## Total Nitrogen
 
 ### About Nitrogen
@@ -225,6 +233,7 @@ Total nitrogen (TN) tests for nitrogen in all its forms, including nitrate (NO3-
 There is no numerical state standard for nitrogen in Massachusetts and the standard in Vermont is a very lax 5.0 mg-N/L of water. No sites that we test come close to exceeding that standard. The EPA recommends a limit of 0.38 mg-N/L based on what natural levels would be in this region. We choose to compare our results to the EPA suggested standard.
 
 ### Results
+
 ```{R}
 #| label: TN setup
 
@@ -294,10 +303,9 @@ cat(res, sep = '\n\n')
 
 ### About Turbidity
 
-Turbidity is a measure of how murky or cloudy water is.  Clay, silt, finely divided inorganic and organic matter, algae, soluble colored organic compounds, and microscopic organisms all contribute to how turbid water is. Low and slow flows in streams tend to be less turbid while high flows after rain events are usually more turbid. Turbidity is a measured by the intensity of light scattered by particles suspended in a water sample. It is measured in nephometric turbidity units (NTU). Typically, low flowing, clear water have turbidity values of 10 NTU or lower. 
+Turbidity is a measure of how murky or cloudy water is. Clay, silt, finely divided inorganic and organic matter, algae, soluble colored organic compounds, and microscopic organisms all contribute to how turbid water is. Low and slow flows in streams tend to be less turbid while high flows after rain events are usually more turbid. Turbidity is a measured by the intensity of light scattered by particles suspended in a water sample. It is measured in nephometric turbidity units (NTU). Typically, low flowing, clear water have turbidity values of 10 NTU or lower.
 
-The Massachusetts standard for turbidity is stated as “These waters shall be free from color and turbidity in concentrations or combinations that are aesthetically objectionable or would impair any use assigned to this Class.” Vermont water quality standards state that average annual turbidity should not exceed 10 NTU in Class A and cold water fishery Class B waters; the average should not exceed 25 NTU in warm water fishery Class B waters.
-
+The Massachusetts standard for turbidity is stated as "These waters shall be free from color and turbidity in concentrations or combinations that are aesthetically objectionable or would impair any use assigned to this Class." Vermont water quality standards state that average annual turbidity should not exceed 10 NTU in Class A and cold water fishery Class B waters; the average should not exceed 25 NTU in warm water fishery Class B waters.
 
 ### Results
 
