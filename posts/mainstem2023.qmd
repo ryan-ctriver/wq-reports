@@ -1,8 +1,8 @@
 ---
-title: "DRAFT Connecticut River E. coli Report (2019-2023)"
+title: "Connecticut River E. coli Report (2019-2023)"
 author: "Ryan O'Donnell"
 desription: "Five year summary of E.coli sampling on the Connecticut River"
-date: "4/1/2024"
+date: "7/23/2024"
 format:
   html:
     df-print: paged
@@ -87,11 +87,11 @@ bactdata_tidy <- bactdata_orig %>%
 
 ```
 
-Volunteers for the Connecticut River Conservancy (CRC)collect samples from spots along the Connecticut River weekly from thirteen locations in Massachusetts and eight in Connecticut. Volunteers from the [Putney Rowing Club](https://putneyrowingclub.org/) collect samples six times a year from one location in Vermont. Sampling usually occurs during the peak recreation season from the first week of June through sometime in September. The sampling season in 2020 was delayed until July and ran through the end of October due to the COVID-19 pandemic.
+Volunteers for the Connecticut River Conservancy (CRC) collect samples of the Connecticut River weekly from thirteen locations in Massachusetts and eight in Connecticut. Volunteers from the [Putney Rowing Club](https://putneyrowingclub.org/) also collect samples six times a year from one location in Vermont. Sampling usually occurs during the peak recreation season from the first week of June through sometime in September. The sampling season in 2020 was delayed until July and ran through the end of October due to the COVID-19 pandemic.
 
 These sites were all selected as points of recreational interest; they are samples from boat ramps, docks, or at popular swimming holes. Most of the sites are directly on the mainstem of the Connecticut River. The Oxbow and Wethersfield Cove sites are located in semi-separate bodies of water that represent a mix of the main tributary to that body and the Connecticut River.
 
-Sample results are classified as having been sampled after wet or dry weather. A sample is classified as wet weather if more than 0.1 inch of rain has fallen in the previous 48 hours. This indicates whether a sample result is being influenced by the presence of runoff. Runoff is rainwater or snowmelt that enters directly into the nearest body of water without being filtered through groundwater systems. The more impervious surfaces like asphalt and concrete there are near a sampling location, the more runoff is created during a rain event. Runoff carries with it pollutants, including bacteria, from land into the receiving water with it.
+Sample results are classified as having been sampled after either wet or dry weather. A sample is classified as wet weather if more than 0.1 inch of rain has fallen in the previous 48 hours. This indicates whether a sample result is being influenced by the presence of runoff. Runoff is rainwater or snowmelt that enters directly into the nearest body of water without being filtered through groundwater systems. The more impervious surfaces like asphalt and concrete there are in a given location, the more runoff is created there during a rain event. Runoff carries with it pollutants, including bacteria, from the land into the receiving water with it.
 
 Throughout the season, results are uploaded to [*Is It Clean?/¿Está Limpio?*](https://www.connecticutriver.us) as they become available alongside other results from throughout the Connecticut River watershed.
 
@@ -257,9 +257,13 @@ cat(res, sep = '\n')
 
 The sites are ordered on the chart from upstream to downstream from top left to bottom right. Sites that were not sampled in a year do not appear on the chart.
 
+# Conclusion
+
+Reviewing five years of *E. coli* data collected from the Connecticut River shows that after dry weather, the Connecticut River is usually swimmable and boatable. Even after wet weather, many sites tend to maintain their good water quality. Working to improve stormwater infrastructure and remove CSOs will continue to improve the water quality in the Connecticut River.
+
 ## Complete Results
 
-Please use the table below to browse the complete results used in this report.
+Please use the table below to browse the complete results used in this report. Fields can be filtered to find specific locations or dates.
 
 ```{r}
 #| label: full results table

@@ -8,7 +8,7 @@ listing:
   fields: [date, title, author]
   table-hover: true
   exclude: 
-    format: revealjs
+    categories: presentation
 page-layout: full
 ---
 
