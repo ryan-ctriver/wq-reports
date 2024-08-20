@@ -33,8 +33,8 @@ graph <- TP %>%
   )+
   scale_fill_manual(name = "Flow Level", values = lmh_colors) +
   scale_shape_manual(name = "Year", values = c(21:23)) +
-  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A/B(1) Standard"), color = standardcolor) +
-  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2) Standard"), color = standardcolor2) +
+  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A/B(1) Std"), color = standardcolor) +
+  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2) Std"), color = standardcolor2) +
   scale_linetype_manual(name = "", values = c(2:3)) +
   scale_y_log10(limits = c(1, TPmax)) +
   labs(title = .watershed,
@@ -49,5 +49,13 @@ widget <- girafe(ggobj = graph,
        ))
 
 widget
+
+
+discussion %>%
+  filter(Parameter == "TP") %>%
+  filter(Watershed == .watershed) %>%
+  .$Discussion %>%
+  str_wrap(width = 60) %>%
+  cat()
 
 ```

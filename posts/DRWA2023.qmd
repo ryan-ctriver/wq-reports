@@ -54,6 +54,7 @@ library(EnvStats)
 data_21_22 <- read_xlsx("_data/21-22_DRWAResults_Checked.xlsx")
 data_23 <- read_xlsx("_data/23_CompiledResults_FlowsIncluded.xlsx")
 allsiteinfo <- read_xlsx("C:/WorkingData/R/CRC-WQ-Data/InputData/allsiteinfo.xlsx")
+discussion <- read_xlsx("_data/21-23DRWAcommentary.xlsx")
 
 # Connect data
 
@@ -164,8 +165,13 @@ sitemap <- ggplot() +
   geom_sf_interactive(data = rivers, aes(tooltip = GNIS_NAME, data_id = GNIS_NAME), color = "#332288") +
   geom_sf_interactive(data = reservoirs, aes(tooltip = GNIS_NAME, data_id = GNIS_NAME), fill = "#332288", color = "#332288") +
   geom_sf(data = ctr_mainstem, color = "#332288", linewidth = 1.2) +
-  geom_point_interactive(data = report_siteinfo, aes(x = Lon, y = Lat, tooltip = MapName, data_id = SiteID), fill = "white", size = 2, shape = 21) +
-  coord_sf(xlim = c(min(report_siteinfo$Lon) - 0.2, max(report_siteinfo$Lon) + 0.05), ylim = c(min(report_siteinfo$Lat) - 0.07, max(report_siteinfo$Lat) + 0.14), expand = FALSE) +
+  geom_point_interactive(data = report_siteinfo, 
+                         aes(x = Lon, y = Lat, tooltip = MapName, data_id = SiteID), 
+                         fill = "white", size = 2, shape = 21) +
+  coord_sf(
+    xlim = c(min(report_siteinfo$Lon) - 0.2, max(report_siteinfo$Lon) + 0.05), 
+    ylim = c(min(report_siteinfo$Lat) - 0.07, max(report_siteinfo$Lat) + 0.14), 
+    expand = FALSE) +
   theme_void() +
   labs(subtitle = "DRWA Sites Monitored 2021-2023")
 
@@ -195,6 +201,14 @@ The Environmental Protection Agency (EPA) has made [water quality recommendation
 
 ### Results
 
+The results below are grouped by site and then by wet or dry weather. Wet weather is classified as greater than one tenth an inch (>0.1”) of rain in the 24 hours prior to sampling. 
+
+::: callout-tip
+#### Interactive Charts
+
+These graphs are interactive! Hover your mouse (or click if using a touch screen) over the boxes to see the quartile and mean values. Hover your mouse (or click if using a touch screen) over a point to see the individual result, the date of the sample, and to highlight other samples from the same date on the graph.
+:::
+
 ```{R}
 #| label: E.coli setup
 
@@ -204,6 +218,8 @@ Ecoli <- data_compiled %>%
   filter(ParameterName == "E. coli" & SiteID != "VT-NBD_12.5")
 
 ECmax <- max(Ecoli$Result)
+
+
 
 ```
 
@@ -233,6 +249,18 @@ Total nitrogen (TN) tests for nitrogen in all its forms, including nitrate (NO3-
 There is no numerical state standard for nitrogen in Massachusetts and the standard in Vermont is a very lax 5.0 mg-N/L of water. No sites that we test come close to exceeding that standard. The EPA recommends a limit of 0.38 mg-N/L based on what natural levels would be in this region. We choose to compare our results to the EPA suggested standard.
 
 ### Results
+
+The results below are grouped by site and then by flow level. Low flows are considered the bottom 25% of flows of all time, moderate flows are the middle 50%, and high flows are the top 25%. These flows are determined by analyzing the nearest 1-2 USGS gage stations. In order to prioritize safety, volunteers never collect during flooding or other high flow conditions which would make sampling dangerous.
+
+Total nitrogen is very soluble in water and so is easily diluted in higher flows. Most of the sites below show that the levels are the lowest during moderate flows. During high flows, there is a variety of concentrations, likely depending on how much extra sediment and contamination the water is moving.
+
+During this time period, total nitrogen testing was conducted only at sites selected to participate in the VT Agency of Natural Resource’s LaRosa Partnership Program (LPP). Sites in Vermont are nominated by DRWA and local state employees and then selected based on overarching data needs in Vermont and availability of funding.
+
+::: callout-tip
+#### Interactive Charts
+
+These graphs are interactive! Hover your mouse (or click if using a touch screen) over the boxes to see the quartile and mean values. Hover your mouse (or click if using a touch screen) over a point to see the individual result, the date of the sample, and to highlight other samples from the same date on the graph.
+:::
 
 ```{R}
 #| label: TN setup
@@ -271,6 +299,20 @@ There is no numerical state standard for phosphorus in Massachusetts and the sta
 
 ### Results
 
+The results below are grouped by site and then by flow level. Low flows are considered the bottom 25% of flows of all time, moderate flows are the middle 50%, and high flows are the top 25%. These flows are determined by analyzing the nearest 1-2 USGS gage stations. In order to prioritize safety, volunteers never collect during flooding or other high flow conditions which would make sampling dangerous.
+
+Total phosphorus tends to cling to sediment rather than dissolve in water so is transported in higher concentrations during high flows. Most of the sites below show that the levels are the lowest during moderate flows but much higher in high flows. 
+
+During this time period, total phosphorus testing was conducted only at sites selected to participate in the VT Agency of Natural Resource’s LaRosa Partnership Program (LPP). Sites in Vermont are nominated by DRWA and local state employees and then selected based on overarching data needs in Vermont and availability of funding.
+
+It is important to note that the graphs below have a logarithmic y-axis to better show the spread of results. That was needed because some of the high results collected during an extremely heavy rain event in July 2021 were too high to see on the same graph as the rest of the results with a linear axis.
+
+::: callout-tip
+#### Interactive Charts
+
+These graphs are interactive! Hover your mouse (or click if using a touch screen) over the boxes to see the quartile and mean values. Hover your mouse (or click if using a touch screen) over a point to see the individual result, the date of the sample, and to highlight other samples from the same date on the graph.
+:::
+
 ```{R}
 #| label: TP setup
 
@@ -308,6 +350,18 @@ Turbidity is a measure of how murky or cloudy water is. Clay, silt, finely divid
 The Massachusetts standard for turbidity is stated as "These waters shall be free from color and turbidity in concentrations or combinations that are aesthetically objectionable or would impair any use assigned to this Class." Vermont water quality standards state that average annual turbidity should not exceed 10 NTU in Class A and cold water fishery Class B waters; the average should not exceed 25 NTU in warm water fishery Class B waters.
 
 ### Results
+
+The results below are grouped by site and then by flow level. Low flows are considered the bottom 25% of flows of all time, moderate flows are the middle 50%, and high flows are the top 25%. These flows are determined by analyzing the nearest 1-2 USGS gage stations. In order to prioritize safety, volunteers never collect during flooding or other high flow conditions which would make sampling dangerous.
+
+In most cases, turbidity is most affected by sediment suspended in the water and so we expect to see higher values during high flows. Most of the sites below show that the levels are the lowest during moderate flows but much higher in high flows. 
+
+It is important to note that the graphs below have a logarithmic y-axis to better show the spread of results.
+
+::: callout-tip
+#### Interactive Charts
+
+These graphs are interactive! Hover your mouse (or click if using a touch screen) over the boxes to see the quartile and mean values. Hover your mouse (or click if using a touch screen) over a point to see the individual result, the date of the sample, and to highlight other samples from the same date on the graph.
+:::
 
 ```{R}
 #| label: Turb setup
@@ -355,6 +409,18 @@ Conductivity is not in itself regulated but is a good indicator of road salt usa
 
 Because these two parameters are so closely related, the two charts are shown next to each other below.
 
+The results below are grouped by site and then by flow level. Low flows are considered the bottom 25% of flows of all time, moderate flows are the middle 50%, and high flows are the top 25%. These flows are determined by analyzing the nearest 1-2 USGS gage stations. In order to prioritize safety, volunteers never collect during flooding or other high flow conditions which would make sampling dangerous.
+
+Both chloride and specific conductance tend to dilute at higher flows, so the lowest concentrations are observed at the highest flows.
+
+During this time period, chloride testing was conducted only at sites selected to participate in the VT Agency of Natural Resource’s LaRosa Partnership Program (LPP). Sites in Vermont are nominated by DRWA and local state employees and then selected based on overarching data needs in Vermont and availability of funding. Specific Conductance testing was conducted at all locations.
+
+::: callout-tip
+#### Interactive Charts
+
+These graphs are interactive! Hover your mouse (or click if using a touch screen) over the boxes to see the quartile and mean values. Hover your mouse (or click if using a touch screen) over a point to see the individual result, the date of the sample, and to highlight other samples from the same date on the graph.
+:::
+
 ```{R}
 #| label: clcond setup
 
@@ -385,3 +451,9 @@ res <- purrr::map_chr(watersheds, \(.watershed) {
 cat(res, sep = '\n\n')
 ```
 :::
+
+# Conclusions and Next Steps
+
+Overall, the Deerfield River Watershed has very good water quality for the region, especially the Massachusetts portion of the mainstem Deerfield River. The North Branch Deerfield River in Wilmington, the East Branch North River in Jacksonville, and the Green River in Greenfield are heavily impacted at times. Wilmington and Greenfield would benefit from efforts to reduce urban and agricultural runoff. In the case of Jacksonville, it is unclear where the source of bacteria is but once identified should be addressed.
+
+Water quality monitoring is continuing through 2024 and planned for 2025. An additional site was added between the Upstream of Mount Snow and the Valley Trail location to better parse what impacts Snow Lake may be having on water quality. Bacterial source tracking is ongoing in Jacksonville as time and funding allow.

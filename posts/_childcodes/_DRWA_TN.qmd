@@ -33,7 +33,7 @@ graph <- TN %>%
   )+
   scale_fill_manual(name = "Flow Level", values = lmh_colors) +
   scale_shape_manual(name = "Year", values = c(21:23)) +
-  geom_hline(aes(yintercept = TN_standard, linetype = "EPA Recommendation"), color = standardcolor) +
+  geom_hline(aes(yintercept = TN_standard, linetype = "EPA Rec"), color = standardcolor) +
   scale_linetype_manual(name = "", values = 2) +
   ylim(0, TNmax) +
   labs(title = .watershed,
@@ -48,5 +48,12 @@ widget <- girafe(ggobj = graph,
        ))
 
 widget
+
+discussion %>%
+  filter(Parameter == "TN") %>%
+  filter(Watershed == .watershed) %>%
+  .$Discussion %>%
+  str_wrap(width = 60) %>%
+  cat()
 
 ```

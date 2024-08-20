@@ -61,32 +61,37 @@ Basin12 <- read_xlsx("_data/24Basin12Data.xlsx") %>%
       TRUE ~ as.numeric(ResultValue)
     ),
     Group = case_when(
-      River == "BRD" ~ "CT River Direct",
-      River == "BVR" ~ "N. Br. Deerfield Trib",
+      River == "BRD" ~ "CT River Tributaries",
+      River == "BVR" ~ "Deerfield Tributaries",
       River == "EBN" ~ "North River",
       River == "NBD" ~ "North Branch Deerfield River",
-      River == "NWT" ~ "CT River Direct",
-      River == "ELS" ~ "N. Br. Deerfield Trib",
+      River == "NWT" ~ "CT River Tributaries",
+      River == "ELS" ~ "Deerfield Tributaries",
       River == "WET" ~ "Whetstone Brook",
       River == "GRN" ~ "Green River",
-      River == "COB" ~ "N. Br. Deerfield Trib",
-      River == "PND" ~ "Green River Trib",
-      River == "HBG" ~ "Green River Trib",
-      River == "NEG" ~ "N. Br. Deerfield Trib"
+      River == "COB" ~ "Deerfield Tributaries",
+      River == "PND" ~ "Green Tributaries",
+      River == "HBG" ~ "Green Tributaries",
+      River == "NEG" ~ "Deerfield Tributaries"
     ),
     WeatherStatus = case_when(
       WeatherStatus == "Y" ~ "Wet",
       WeatherStatus == "N" ~ "Dry",
       TRUE ~ WeatherStatus
     ),
-    "SampleYear" = as.character(year(SampleDate))
-    ) %>%
+    "SampleYear" = as.character(year(SampleDate)),
+      SiteID = case_when(
+      SiteID == "VT-ELS_00.2" & SampleYear < 2023 ~ "VT-NEG_00.2",
+      TRUE ~ SiteID
+    )) %>%
   rename(ChartName = `Chart Name`)
 
 wetdry_colors <- c("Dry" = "#44AA99", "Wet" = "#554499")
 lmh_colors <- c("Low" = "#88CCEE", "Moderate" = "#DDCC77", "High" = "#CC6677")
 standardcolor <- "#AA4499"
 standardcolor2 <- "#442222"
+
+watersheds <- unique(Basin12$Group)
 ```
 
 INTRO
@@ -101,14 +106,14 @@ INTRO
 
 # Monitoring Results
 
-::: panel-tabset
-
 ## Bacteria
-
 ```{r bacteria set-up}
 
 bacteria_data <- Basin12 %>%
-  filter(Parameter == "E. coli")
+  filter(Parameter == "E. coli") %>%
+  filter(SiteID != "VT-NWT_01.0") %>%
+  filter(SiteID != "VT-NBD_12.5") %>%
+  filter(SiteID != "VT-NBD_01.3")
 
 ECmax <- max(bacteria_data$ResultCalc)
 
@@ -116,76 +121,67 @@ swim_limit = 235
 
 ```
 
-```{r bacteria test chart}
+::: {.panel-tabset group="watershed"}
 
-graph <- bacteria_data %>%
-  filter(Group == "Whetstone Brook") %>%
-  ggplot() +
-  geom_boxplot_interactive(
-    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
-      middle = geoMean(ResultCalc),
-      fill = WeatherStatus,
-      group = paste(ChartName, WeatherStatus),
-      data_id = WeatherStatus,
-      tooltip = after_stat({
-        paste0(
-          "Q1: ", prettyNum(.data$ymin),
-          "\nMean: ", prettyNum(.data$middle),
-          "\nQ3: ", prettyNum(.data$ymax)
-        )})),
-    outlier.shape = NA
-      ) +
-  geom_point_interactive(
-    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
-        
-        group = paste(ChartName, WeatherStatus),
-        tooltip = paste0(
-        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " MPN/100mL"
-      ),
-      fill = WeatherStatus,
-      data_id = SampleDate
-        ),
-    shape = 21,
-    alpha = 0.5,
-    position = position_jitterdodge()
-  ) +
-  scale_fill_manual(name = "Weather", values = wetdry_colors) +
-  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
-  scale_linetype_manual(name = "", values = 2) +
-  ylim(0, ECmax) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
-  labs(title = "Whetstone Brook",
-       subtitle = "E. coli Results by Sampling Location and Flow",
-       x = "Sampling Location",
-       y = "Number E. coli (MPN/100mL)")
+```{r bacteria graphs}
+#| output: asis
+#| echo: false
 
-widget <- girafe(ggobj = graph, 
-       options = list(
-         opts_hover(css = "fill:cyan;"),
-         opts_hover_inv(css = "opacity:0.4;")
-       ))
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_B12_EC.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
 
-widget
-
-cat("Discussion TBD")
-
+cat(res, sep = '\n\n')
 ```
-```{r bact graph by year}
-bacteria_data %>%
-  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
-  summarise("GM" = geoMean(ResultCalc)) %>%
-  filter(Group == "Whetstone Brook") %>%
-  ggplot() +
-  geom_line(aes(x = Mile, y = GM, color = SampleYear)) +
-  geom_point(aes(x = Mile, y = GM, color = SampleYear)) +
-  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
-  scale_linetype_manual(name = "", values = 2) +
-  scale_x_reverse() +
-  facet_wrap(~WeatherStatus)
 
+:::
 
-```
 ## Nutrients
+```{r nutrients set-up}
+
+nutrient_data <- Basin12 %>%
+  filter(Parameter %in% c("Total Nitrogen", "Total Phosphorus")) %>%
+  filter(SiteID != "VT-NBD_01.3")
+
+TNmax <- nutrient_data %>%
+  filter(Parameter == "Total Nitrogen")
+
+TNmax <- max(TNmax$ResultCalc)
+
+TN_standard <- 0.38
+
+TPmax <- nutrient_data %>%
+  filter(Parameter == "Total Phosphorus")
+
+TPmax <- max(TPmax$ResultCalc)
+
+TP_standardA1 <- 9
+TP_standardB2 <- 15
+
+```
+
+::: {.panel-tabset group="watershed"}
+
+```{r nutrient graphs}
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_B12_nutrient.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+:::
 
 ## Chloride/Conductivity
 
@@ -194,7 +190,7 @@ bacteria_data %>%
 ## Discussion
 
 ## 
-:::
+
 
 # Next Steps
 

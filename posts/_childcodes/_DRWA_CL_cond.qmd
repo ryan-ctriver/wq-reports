@@ -38,8 +38,9 @@ graph1 <- clcond %>%
   #theme(axis.text.y = element_text(size = 6)) +
   labs(title = .watershed,
        subtitle = "Specific Conductance Results by Sampling Location and Flow",
-       #x = "Sampling Location",
+       x = "Sampling Location",
        y = "Specific Conductance (\U03BCS/cm)")
+
 
 graph2 <- clcond %>%
   filter(Group == .watershed) %>%
@@ -88,5 +89,14 @@ widget <- girafe(ggobj = graph1 / graph2,
        ))
 
 widget
+
+
+discussion %>%
+  filter(Parameter == "ClCond") %>%
+  filter(Watershed == .watershed) %>%
+  .$Discussion %>%
+  str_wrap(width = 60) %>%
+  cat()
+
 
 ```
