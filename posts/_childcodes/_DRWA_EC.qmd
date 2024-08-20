@@ -48,4 +48,11 @@ widget <- girafe(ggobj = graph,
 
 widget
 
+discussion %>%
+  filter(Parameter == "EC") %>%
+  filter(Watershed == .watershed) %>%
+  .$Discussion %>%
+  str_wrap(width = 60) %>%
+  cat()
+
 ```

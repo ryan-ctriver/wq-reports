@@ -1,0 +1,114 @@
+### `r .watershed`
+
+```{r}
+graph <- bacteria_data %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = geoMean(ResultCalc),
+      fill = WeatherStatus,
+      group = paste(ChartName, WeatherStatus),
+      data_id = WeatherStatus,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = paste(ChartName, WeatherStatus),
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " MPN/100mL"
+      ),
+      fill = WeatherStatus,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  scale_fill_manual(name = "Weather", values = wetdry_colors) +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  ylim(0, ECmax) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  labs(title = .watershed,
+       subtitle = "E. coli Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Number E. coli (MPN/100mL)")
+
+widget <- girafe(ggobj = graph, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget
+
+cat("Discussion TBD")
+
+if (str_detect(.watershed, "Tributar")) {
+  graph3 <- bacteria_data %>%
+  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
+  summarise("GM" = geoMean(ResultCalc)) %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_col_interactive(
+    aes(x = ChartName, y = GM, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(GM, digits = 2),
+                         " MPN/100mL")), position = "dodge") +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  scale_fill_viridis_d(name = "Year") +
+  facet_wrap(~WeatherStatus) +
+  labs(title =.watershed,
+       subtitle = "Average E. coli Results by Weather and Year",
+       y = "Average E. coli (MPN/100mL)")
+
+widget3 <- girafe(ggobj = graph3, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget3
+} else {
+  graph2 <- bacteria_data %>%
+  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
+  summarise("GM" = geoMean(ResultCalc)) %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_line_interactive(
+    aes(x = Mile, y = GM, color = SampleYear)) +
+  geom_point_interactive(
+    aes(x = Mile, y = GM, color = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(GM, digits = 2), " MPN/100mL")
+        )) +
+  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  scale_color_viridis_d(name = "Year") +
+  scale_x_reverse() +
+  facet_wrap(~WeatherStatus) +
+  labs(title = .watershed,
+       subtitle = "Average E. coli Results by Weather and Year",
+       x = "River Mile",
+       y = "Average E. coli (MPN/100mL)")
+
+widget2 <- girafe(ggobj = graph2, 
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget2
+}
+
+cat("discussion 2 TBD")
+
+```
