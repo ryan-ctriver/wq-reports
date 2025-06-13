@@ -1,15 +1,22 @@
 ### `r .watershed`
 
 ```{r}
+# graph by flow level
+
+# nitrogen graph
+
+# select data for graph
 graphn <- nutrient_data %>%
-  filter(Parameter == "Total Nitrogen")
+  filter(Parameter == "Total Nitrogen") %>%
   filter(Group == .watershed) %>%
+  # construct plot
   ggplot() +
+  #boxplot
   geom_boxplot_interactive(
     aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
       middle = mean(ResultCalc),
       fill = FlowCondition,
-      group = paste(ChartName, FlowCondition),
+      group = interaction(ChartName, FlowCondition),
       data_id = FlowCondition,
       tooltip = after_stat({
         paste0(
@@ -19,9 +26,10 @@ graphn <- nutrient_data %>%
         )})),
     outlier.shape = NA
       ) +
+  #xy plot
   geom_point_interactive(
     aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
-        group = paste(ChartName, FlowCondition),
+        group = FlowCondition,
         tooltip = paste0(
         format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " mg/L"
       ),
@@ -32,76 +40,232 @@ graphn <- nutrient_data %>%
     alpha = 0.5,
     position = position_jitterdodge()
   ) +
-  scale_fill_manual(name = "Flow", values = wetdry_colors) +
+  # Flow level colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+  # threshold
   geom_hline(aes(yintercept = TN_standard, linetype = "EPA\nSuggestion"), color = standardcolor) +
-  scale_linetype_manual(name = "", values = 2) +
-  ylim(0, ECmax) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  scale_linetype_manual(name = "N Threshold", values = 2) +
+  # set all graphs to same scale
+  ylim(0, TNmax) +
+  # remove x axis text since it will be connected to n graph
+  theme(axis.text.x = element_blank()) +
+  # labels
   labs(title = .watershed,
        subtitle = "Total Nitrogen Results by Sampling Location and Flow",
-       x = "Sampling Location",
-       y = "Total Nitrogen (mg/mL)")
+       x = "",
+       y = "Total Nitrogen (mg/L)")
 
-widgetn <- girafe(ggobj = graphn, 
+# phosphorus graph
+# select data
+graphp <- nutrient_data %>%
+  filter(Parameter == "Total Phosphorus") %>%
+  filter(Group == .watershed) %>%
+  # build plot
+  ggplot() +
+  #boxplot
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = mean(ResultCalc),
+      fill = FlowCondition,
+      group = interaction(ChartName, FlowCondition),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  #xy plot
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " μg/L"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  # flow colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+  # p thresholds
+  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2)\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "P Thresholds", values = c(2,3)) +
+  # set all graphs to same scale
+  ylim(0, TPmax) +
+  # set graph to log10
+  scale_y_log10() +
+  # tilt text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  # remove flow colors from second legend
+  guides(color = "none") +
+  # labels
+  labs(subtitle = "Total Phosphorus Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Total Phosphorus (μg/L)")
+
+# build html widget
+widget <- girafe(ggobj = graphn / graphp,
+                  height_svg = 8,
        options = list(
          opts_hover(css = "fill:cyan;"),
          opts_hover_inv(css = "opacity:0.4;")
        ))
 
+# print widget
 widget
-
+# pull discussion text for results by flow
 cat("Discussion TBD")
 
-if (str_detect(.watershed, "Tributar")) {
-  graph3 <- bacteria_data %>%
-  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
-  summarise("GM" = geoMean(ResultCalc)) %>%
-  filter(Group == .watershed) %>%
-  ggplot() +
-  geom_col_interactive(
-    aes(x = ChartName, y = GM, fill = SampleYear,
-        data_id = paste0(ChartName,SampleYear),
-        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(GM, digits = 2),
-                         " MPN/100mL")), position = "dodge") +
-  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
-  scale_linetype_manual(name = "", values = 2) +
-  scale_fill_viridis_d(name = "Year") +
-  facet_wrap(~WeatherStatus) +
-  labs(title =.watershed,
-       subtitle = "Average E. coli Results by Weather and Year",
-       y = "Average E. coli (MPN/100mL)")
+# if else to split between tributary groups vs rivers
 
-widget3 <- girafe(ggobj = graph3, 
+if (str_detect(.watershed, "Tributar")) {
+  # nitrogeh bar graph
+  # select data
+graph3n <- nutrient_data %>%
+  filter(Parameter == "Total Nitrogen") %>%
+  filter(Group == .watershed) %>%
+  # calculate averages by year
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc)) %>%
+  # build plot
+  ggplot() +
+  # column
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " mg/L")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # n threshold
+  geom_hline(aes(yintercept = TN_standard, linetype = "EPA\nSuggestion"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  facet_wrap(~FlowCondition) +
+  # remove redundant axis text
+  theme(axis.text.x = element_blank()) +
+  labs(title =.watershed,
+       subtitle = "Average Total Nitrogen Results by Weather and Year",
+       x = "",
+       y = "Average Total Nitrogen (mg/L)")
+# p bar graph
+# select data
+graph3p <- nutrient_data %>%
+  filter(Parameter == "Total Phosphorus") %>%
+  filter(Group == .watershed) %>%
+  # calculate yearly average
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc)) %>%
+  #build graph
+  ggplot() +
+  #bar graph
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " μg/L")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # p thresholds
+  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2)\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "", values = c(2,3)) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  #log10 scale
+    scale_y_log10() +
+  facet_wrap(~FlowCondition) +
+  # tilt axis text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  guides(fill = "none") +
+  labs(subtitle = "Average Total Phosphorus Results by Weather and Year",
+       x = "Sampling Location",
+       y = "Average Total Phosphorus (μg/L)")
+# build html widget
+widget3 <- girafe(ggobj = graph3n / graph3p,
+                   height_svg = 8,
        options = list(
          opts_hover(css = "fill:cyan;"),
          opts_hover_inv(css = "opacity:0.4;")
        ))
 
+# print widget
 widget3
+
 } else {
-  graph2 <- bacteria_data %>%
-  group_by(Group, SiteID, Mile, ChartName, WeatherStatus, SampleYear) %>%
-  summarise("GM" = geoMean(ResultCalc)) %>%
+  # individual river line charts
+  # select data
+  graph2n<- nutrient_data %>%
+  filter(Parameter == "Total Nitrogen") %>%
+  filter(Group == .watershed) %>%
+    #calculate averages
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc)) %>%
+    #build graph
+  ggplot() +
+    #lines
+  geom_line_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear)) +
+    #points
+  geom_point_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2), " mg/L")
+        )) +
+    # n threshold
+  geom_hline(aes(yintercept = TN_standard, linetype = "EPA\nRecommendation"), color = standardcolor) +
+  scale_linetype_manual(name = "", values = 2) +
+    # year colors
+  scale_color_manual(name = "Year", values = yearcolors) +
+    # reverse scale so upstream is left
+  scale_x_reverse() +
+  facet_wrap(~FlowCondition) +
+    theme(legend.position = NULL) +
+  labs(title = .watershed,
+       subtitle = "Average Total Nitrogen Results by Weather and Year",
+       x = "River Mile",
+       y = "Average Total Nitrogen (mg/L)")
+
+  graph2p<- nutrient_data %>%
+  filter(Parameter == "Total Phosphorus") %>%
+  filter(Group == .watershed) %>%
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc)) %>%
   filter(Group == .watershed) %>%
   ggplot() +
   geom_line_interactive(
-    aes(x = Mile, y = GM, color = SampleYear)) +
+    aes(x = Mile, y = Avg, color = SampleYear)) +
   geom_point_interactive(
-    aes(x = Mile, y = GM, color = SampleYear,
+    aes(x = Mile, y = Avg, color = SampleYear,
         data_id = paste0(ChartName,SampleYear),
-        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(GM, digits = 2), " MPN/100mL")
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2), " μg/L")
         )) +
-  geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
-  scale_linetype_manual(name = "", values = 2) +
-  scale_color_viridis_d(name = "Year") +
+  geom_hline(aes(yintercept = TP_standardA1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = TP_standardB2, linetype = "VT B(2)\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "", values = c(2,3)) +
+  scale_color_manual(name = "Year", values = yearcolors) +
   scale_x_reverse() +
-  facet_wrap(~WeatherStatus) +
-  labs(title = .watershed,
-       subtitle = "Average E. coli Results by Weather and Year",
+    scale_y_log10() +
+  facet_wrap(~FlowCondition) +
+    guides(color = "none") +
+  labs(subtitle = "Average Total Phosphorus Results by Weather and Year",
        x = "River Mile",
-       y = "Average E. coli (MPN/100mL)")
+       y = "Average Total Phosphorus (μg/L)")
 
-widget2 <- girafe(ggobj = graph2, 
+widget2 <- girafe(ggobj = graph2n / graph2p,
+                   height_svg = 8,
        options = list(
          opts_hover(css = "fill:cyan;"),
          opts_hover_inv(css = "opacity:0.4;")

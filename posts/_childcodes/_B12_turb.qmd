@@ -1,0 +1,162 @@
+### `r .watershed`
+
+```{r}
+# graph by flow level
+
+# turbidity graph
+
+# select data for graph
+graph <- turb_data %>%
+  filter(Group == .watershed) %>%
+  # construct plot
+  ggplot() +
+  #boxplot
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = mean(ResultCalc),
+      fill = FlowCondition,
+      group = interaction(ChartName, FlowCondition),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  #xy plot
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " NTU"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  # Flow level colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+  # threshold
+  geom_hline(aes(yintercept = turb_standard_A1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = turb_standard_other, linetype = "VT All Other\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "Turb Thresholds", values = c(2,3)) +
+  # set all graphs to same scale
+  ylim(0, turbmax) +
+  # tilt text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  # labels
+  labs(title = .watershed,
+       subtitle = "Turbidity Results by Sampling Location and Flow",
+       x = "",
+       y = "Turbidity (NTU)")
+
+# build html widget
+widget <- girafe(ggobj = graph,
+                  height_svg = 4,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+# print widget
+widget
+# pull discussion text for results by flow
+cat("Discussion TBD")
+
+# if else to split between tributary groups vs rivers
+
+if (str_detect(.watershed, "Tributar")) {
+  # turbidity bar graph
+  # select data
+graph3 <- turb_data %>%
+  filter(Group == .watershed) %>%
+  # calculate averages by year
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc, na.rm = TRUE)) %>%
+  # build plot
+  ggplot() +
+  # column
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " NTU")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # threshold
+  geom_hline(aes(yintercept = turb_standard_A1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = turb_standard_other, linetype = "VT All Other\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "Turb Thresholds", values = c(2,3)) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  facet_wrap(~FlowCondition) +
+  # tilt axis text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  labs(title =.watershed,
+       subtitle = "Average Turbidity Results by Weather and Year",
+       x = "",
+       y = "Average Turbidity (NTU)")
+
+# build html widget
+widget3 <- girafe(ggobj = graph3,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+# print widget
+widget3
+
+} else {
+  # individual river line charts
+  # select data
+  graph2<- nutrient_data %>%
+  filter(Group == .watershed) %>%
+    #calculate averages
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc, na.rm = TRUE)) %>%
+    #build graph
+  ggplot() +
+    #lines
+  geom_line_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear)) +
+    #points
+  geom_point_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2), " NTU")
+        )) +
+    # threshold
+  geom_hline(aes(yintercept = turb_standard_A1, linetype = "VT A(1)\nStandard"), color = standardcolor) +
+  geom_hline(aes(yintercept = turb_standard_other, linetype = "VT All Other\nStandard"), color = standardcolor2) +
+  scale_linetype_manual(name = "Turb Thresholds", values = c(2,3)) +
+    # year colors
+  scale_color_manual(name = "Year", values = yearcolors) +
+    # reverse scale so upstream is left
+  scale_x_reverse() +
+  facet_wrap(~FlowCondition) +
+  labs(title = .watershed,
+       subtitle = "Average Turbidity Results by Weather and Year",
+       x = "River Mile",
+       y = "Average Turbidity (NTU)")
+
+ 
+widget2 <- girafe(ggobj = graph2,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget2
+}
+
+cat("discussion 2 TBD")
+
+```

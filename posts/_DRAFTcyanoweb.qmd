@@ -1,0 +1,445 @@
+---
+title: "Cyanobacteria Report 2023-2024"
+author: "Ryan O'Donnell"
+desription: "Two year summary of cyanobacteria monitoring in select ponds in Massachusetts"
+date: "6/15/2024"
+format:
+  html:
+    df-print: paged
+    toc: true
+    echo: false
+    warning: false
+categories:
+  - Cyanobacteria
+  - Massachusetts
+  - Lakes and ponds
+  - 2024
+  - 2023
+  - Recreation
+  - Human Health
+---
+
+```{R}
+#|label: library set-up
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(ggbrick)
+library(htmlwidgets)
+library(gt)
+library(paletteer)
+library(treemap)
+library(d3Tree)
+```
+
+```{r data set-up}
+
+data_filepath <- "_data/23-24CyanoDataEntry.xlsx"
+  
+cyanosites <- read_excel(data_filepath, sheet = "SiteList")
+
+cyanodata <- read_excel(data_filepath, sheet = "DataEntry") %>%
+  select(-starts_with(c("PC-", "Chl-"))) %>%
+  pivot_longer(
+    cols = starts_with("PC_Chl"),
+    names_to = (c("Parameter", "DupNum")),
+    names_sep = "-",
+    values_to = "ResultValue"
+  ) %>%
+  filter(Parameter == "PC_Chl_Ratio") %>%
+  drop_na() %>%
+  group_by(SiteID, SampleDate, WaterTemp) %>%
+  summarise(PC_Chl_Mean = mean(ResultValue)) %>%
+  left_join(
+    x = ., y = cyanosites,
+    by = "SiteID"
+  ) %>%
+  mutate(
+    "Bloom" = case_when(
+    PC_Chl_Mean >= 1 ~ "Yes",
+    PC_Chl_Mean < 1 ~ "No"
+    ),
+    "SampleYear" = year(as_date(SampleDate)),
+    "SampleMonth" = month(as_date(SampleDate), label = TRUE),
+    # Barley Straw started being deployed in 2024
+    BarleyStraw = case_when(
+     WaterGroup == "Hockanum Rd Ponds" & SampleYear >= 2024 ~ "Yes",
+     TRUE ~ BarleyStraw
+    )
+  )  
+
+landuse_histo <- cyanosites <- read_excel(data_filepath, sheet = "LandUse2019")
+
+landuse_percent <- landuse_histo %>%
+  pivot_longer(
+    cols = 2:16,
+    names_to = c("LandUseCat", "LandUseSubCat"),
+    names_sep = "-",
+    values_to = "Count"
+  ) %>%
+  group_by(WaterGroup) %>%
+  mutate(
+    "LUPercent" = Count / sum(Count)
+  )
+
+crc_blue <- "#107ba6"
+crc_green <- "#087f45"
+crc_orange <- "#f1ad2d"
+crc_lightbrown <- "#d37e47"
+crc_darkblue <- "#053d57"
+crc_tan <- "#efdbb2"
+crc_darkgreen <- "#215732"
+crc_darkbrown <- "#8a4a20"
+crc_lightblue <- "#def4fc"
+crc_grey <- "#8c8279"
+crc_darkorange <- "#ff8021"
+crc_red <- "#f14124"
+
+crc_pallette <- c(
+  crc_blue,
+  crc_orange,
+  crc_green,
+  crc_lightbrown,
+  crc_grey,
+  crc_darkblue,
+  crc_darkorange,
+  crc_darkgreen,
+  crc_darkbrown,
+  crc_tan)
+
+bloompercent <- cyanodata %>%
+  group_by(WaterGroup, DrainageArea_sqmi, Bloom) %>%
+  tally() %>%
+  group_by(WaterGroup, DrainageArea_sqmi) %>%
+  mutate(
+    "NoBloomPercent" = n / sum(n),
+    "BloomPercent" = 1 - NoBloomPercent
+  ) %>%
+  filter(Bloom == "No")
+
+bloompercent_barleystraw <- cyanodata %>%
+  group_by(WaterGroup, DrainageArea_sqmi, BarleyStraw, Bloom, SampleYear) %>%
+  tally() %>%
+  group_by(WaterGroup, DrainageArea_sqmi, SampleYear) %>%
+  mutate(
+    "NoBloomPercent" = n / sum(n),
+    "BloomPercent" = 1 - NoBloomPercent
+  ) %>%
+  filter(Bloom == "No")
+
+
+landuse_cyano <- landuse_percent %>%
+  group_by(WaterGroup, LandUseCat) %>%
+  left_join(
+    x = bloompercent,
+    y = .,
+    by = "WaterGroup"
+  ) %>%
+  mutate("LanduseCatArea_sqmi" = LUPercent *  DrainageArea_sqmi)
+
+landuse_cyano_bs <- landuse_percent %>%
+  group_by(WaterGroup, LandUseCat) %>%
+  left_join(
+    x = bloompercent_barleystraw,
+    y = .,
+    by = "WaterGroup"
+  ) %>%
+  mutate("LanduseCatArea_sqmi" = LUPercent *  DrainageArea_sqmi)
+
+# Land Use Factor Order
+
+lufo <- c("Forest", "Other Green", "Agriculture", "Developed", "Barren", "Wetlands", "Water")
+```
+
+# Introduction
+
+## What is Cyanobacteria?
+
+## Background and Problem
+
+## Methods
+
+# Results
+
+![Site and watershed map](images/cyano/24/all.jpg){width=70%}
+
+## 2023-2024 Results
+
+```{r results overall all sites}
+
+ggplot(cyanodata, aes(x = fct_reorder(SiteName, Lat, .desc = TRUE), fill = Bloom),) +
+  geom_bar(color = "black") +
+  scale_fill_manual(
+    values = c(crc_lightblue, crc_darkgreen),
+    labels = c("Yes" = "Bloom Detected", "No" = "No Bloom Detected"),
+    name = "",
+  ) +
+  scale_y_continuous(breaks = seq(0, 10, by = 2)) +
+  coord_flip() +
+  labs(title =  "Number of Blooms Observed by Site",
+       y = "# Observations",
+       x = "") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~SampleYear)
+
+
+```
+
+```{r results overall blooms by month}
+
+ggplot(cyanodata, aes(x = SampleMonth, fill = Bloom),) +
+  geom_bar(position = "fill", color = "black") +
+  scale_fill_manual(
+    values = c(crc_lightblue, crc_darkgreen),
+    labels = c("Yes" = "Bloom Detected", "No" = "No Bloom Detected"),
+    name = "",
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title =  "Frequency of Blooms Observed Each Month",
+       y = "Percent Observations",
+       x = "") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~SampleYear)
+
+```
+
+```{r create pond graphs}
+# group graph (same as above) turned into a function
+
+unique_dates <- unique(cyanodata$SampleDate) %>% as_date()
+
+groups <- unique(cyanodata$WaterGroup)
+
+graphbygroup <- function(group) {
+  ggplot(data = filter(cyanodata, WaterGroup == group),
+         aes(x = as_date(SampleDate), y = PC_Chl_Mean, color = fct_reorder(SiteName, Lat))) +
+    geom_line() +
+    geom_point() +
+    scale_color_manual(name = "", values = crc_pallette) +
+    scale_x_date(breaks = unique_dates,
+                 minor_breaks = NULL,
+                 date_labels = "%b %d",
+                 guide = guide_axis(angle = 90, check.overlap = TRUE)
+    ) +
+    geom_hline(aes(yintercept = 1, linetype = "Bloom Threshold"), color = crc_red, linewidth = 1)+
+    scale_linetype_manual(name = "", values = 2) +
+    theme_light() +
+    theme(legend.position = "bottom") +
+    labs(
+      subtitle = "2023-2024 PC:Chl Ratios",
+      title = group,
+      y = "PC:Chl Ratio",
+      x = ""
+    ) +
+    facet_grid(~SampleYear, scales = "free_x")
+}
+
+```
+
+### Hockanum Road Ponds
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Hockanum Road ponds map](images/cyano/24/hockanumrd.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+
+```{r hockanum rd}
+graphbygroup("Hockanum Rd Ponds")
+```
+
+### Great Pond
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Great Pond site watershed map](images/cyano/24/greatpond.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r great pond}
+graphbygroup("Great Pond")
+```
+
+### Lake Warner
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Lake Warner site and watershed map](images/cyano/24/lakewarner.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r Lake Warner}
+graphbygroup("Hockanum Rd Ponds")
+```
+
+### Northampton Ponds
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Northampton ponds site and watershed map](images/cyano/24/northampton.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r northampton ponds}
+graphbygroup("Northampton Ponds")
+```
+
+### Nashawannuck Pond
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Nashwannuck Pond site and watershed map](images/cyano/24/nashawannuck.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r nashawannuck pond}
+graphbygroup("Nashawannuck Pond")
+```
+
+### Rubber Thread Pond
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Rubber Thread Pond site and watershed map](images/cyano/24/rubberthread.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r rubber thread pond}
+graphbygroup("Rubber Thread Pond")
+```
+
+### Pine Island Lake
+
+::: {style="float: right; position: relative; top: 0px; padding: 30px;"}
+![Pine Island Lake site and watershed map](images/cyano/24/pineisland.jpg){fig-alt="aerial view of watershed with site locations marked" fig-align="right" width="300"}
+:::
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras a massa venenatis neque mattis finibus in dignissim nulla. Praesent euismod pharetra dui, in maximus ligula hendrerit eu. Pellentesque mattis tempor nunc, eu venenatis felis condimentum eget. Suspendisse ultricies nulla in finibus aliquam. Ut semper, tortor vel faucibus viverra, felis velit pellentesque metus, finibus semper sem elit sit amet enim. Fusce congue dolor nec eros malesuada, vel fringilla elit commodo. Nam nec orci nec tellus bibendum convallis quis nec arcu. Morbi eget mollis sapien, a luctus nisi. Etiam ornare tortor tempus varius luctus. In vehicula est felis. Vivamus venenatis blandit lacus ut sagittis. Etiam vitae molestie justo. Aenean fringilla, justo id accumsan euismod, metus tellus gravida mi, sed accumsan sapien arcu a leo. Maecenas mi risus, dictum vel aliquam in, ornare ut sapien.
+```{r pine island lake}
+graphbygroup("Pine Island Lake")
+```
+
+## Further Analysis
+
+### Water temperature
+
+```{r results by pond and temp}
+
+ggplot(cyanodata, aes(x = WaterTemp, y = PC_Chl_Mean)) +
+  geom_point() +
+  geom_hline(yintercept = 1, color = crc_red) +
+  scale_linetype_manual(name = "Bloom Threshold", values = 2) +
+  coord_cartesian(ylim = c(0, 5)) +
+  geom_smooth(method = "lm", color = crc_blue) +
+  labs(
+    title = "PC-Chl Ratio versus Water Temperature by Water Body",
+    y = "PC-Chl Ratio",
+    x = "Water Temperature (°C)"
+  ) +
+  facet_wrap(vars(fct_reorder(WaterGroup, Lat)))
+
+
+```
+
+All blooms observed occurred in water temperatures over 15°C but there seems to be very little correlation overall between temperature and likelihood of bloom.
+
+### Land Use
+
+```{r results by pond and land use-land use summary}
+totaluse <- ggplot(landuse_cyano, aes(x = fct_reorder(WaterGroup, DrainageArea_sqmi, .desc = TRUE), y = LanduseCatArea_sqmi, fill = fct_relevel(LandUseCat, lufo))) +
+  geom_col() +
+  scale_fill_manual(
+    name = "Land Use Type",
+    values = c(
+      "Forest" = "#117733",
+      "Developed" = "#333333",
+      "Wetlands" = "#88CCEE",
+      "Agriculture" = "#DDCC77",
+      "Water" = "#332288",
+      "Other Green" = "#44AA99",
+      "Barren" = "#CCCCCC"
+    )
+  ) +
+  theme(
+    legend.position = "none"
+  ) +
+  coord_flip() +
+  labs(
+    title = "Watershed Land Use by Area and Percent",
+    y = "Watershed Area (sq mi)",
+    x = ""
+  )
+
+percentuse <- ggplot(landuse_cyano, aes(x = fct_reorder(WaterGroup, DrainageArea_sqmi, .desc = TRUE), y = LUPercent, fill = fct_relevel(LandUseCat, lufo))) +
+  geom_col() +
+  scale_fill_manual(
+    name = "Land Use Type",
+    values = c(
+      "Forest" = "#117733",
+      "Developed" = "#333333",
+      "Wetlands" = "#88CCEE",
+      "Agriculture" = "#DDCC77",
+      "Water" = "#332288",
+      "Other Green" = "#44AA99",
+      "Barren" = "#CCCCCC"
+    )
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(
+    axis.text.y=element_blank()
+  ) +
+  coord_flip() +
+  labs(
+    title = "",
+    y = "Watershed Area (%)",
+    x = ""
+  )
+
+totaluse + percentuse
+```
+
+```{r results by pond and land use - land use and frequency of blooms}
+landuse2 <- landuse_cyano %>%
+  group_by(WaterGroup, BloomPercent, LandUseCat) %>%
+  summarise("LUPercent" = sum(LUPercent)) %>%
+  filter(LandUseCat %in% c("Forest", "Developed", "Agriculture"))
+
+ggplot(landuse2, aes(x= LUPercent, y = BloomPercent, color = WaterGroup)) +
+  geom_point() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_grid(
+    rows = vars(LandUseCat), 
+    scales = "free_x") +
+  labs(
+    title = "Percent of Observations in Bloom by Land Use",
+    y = "Percent Observations in Bloom",
+    x = "Percent Watershed in Land Use Type"
+  )
+
+```
+
+### Barley Straw Mitigation
+```{r barley straw}
+
+ggplot(cyanodata, aes(x = BarleyStraw, fill = Bloom)) +
+  geom_bar(color = "black") +
+  scale_fill_manual(
+    values = c(crc_lightblue, crc_darkgreen),
+    labels = c("Yes" = "Bloom Detected", "No" = "No Bloom Detected"),
+    name = "",
+  ) +
+   facet_grid(
+    cols = vars(SampleYear),
+    #rows = vars(SiteName),
+    scales = "free"
+  ) +
+  labs(
+    title = "Observations in Bloom With and Without Barley Straw Mitigation",
+    x = "Barley Straw Mitigation Site?",
+    y = "# Observations"
+  )
+
+
+```
+
+# Next Steps

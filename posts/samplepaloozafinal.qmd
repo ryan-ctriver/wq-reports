@@ -1,7 +1,6 @@
----
 title: "Samplepalooza Final Report"
 author: "Ryan O'Donnell"
-desription: "Final Report for the Samplepalooza Connecticut River nutrient sampling project"
+description: "Final Report for the Samplepalooza Connecticut River nutrient sampling project"
 date: "4/1/2024"
 format:
   html:

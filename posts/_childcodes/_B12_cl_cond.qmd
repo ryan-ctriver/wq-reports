@@ -1,0 +1,349 @@
+### `r .watershed`
+
+```{r}
+# graph by flow level
+
+# cond graph
+# no chloride data for green tribs, remove that graph for them only
+  if (str_detect(.watershed, "Green Tributaries")) {
+graphcond <- clcond_data %>%
+  filter(Parameter == "Specific Conductance") %>%
+  filter(Group == .watershed) %>%
+  # construct plot
+  ggplot() +
+  #boxplot
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = mean(ResultCalc),
+      fill = FlowCondition,
+      group = interaction(ChartName, FlowCondition),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  #xy plot
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " μS/cm"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  # Flow level colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+  # set all graphs to same scale
+  ylim(0, condmax) +
+  # remove x axis text since it will be connected to n graph
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  # labels
+  labs(title = .watershed,
+       subtitle = "Specific Conductance Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Specific Conductance (μS/cm)")
+
+  # build html widget
+widget <- girafe(ggobj = graphcond,
+                  height_svg = 4,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+  } else {
+# select data for graph
+graphcond <- clcond_data %>%
+  filter(Parameter == "Specific Conductance") %>%
+  filter(Group == .watershed) %>%
+  # construct plot
+  ggplot() +
+  #boxplot
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = mean(ResultCalc),
+      fill = FlowCondition,
+      group = interaction(ChartName, FlowCondition),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  #xy plot
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " μS/cm"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  # Flow level colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+  # set all graphs to same scale
+  ylim(0, condmax) +
+  # remove x axis text since it will be connected to n graph
+  theme(axis.text.x = element_blank()) +
+  # labels
+  labs(title = .watershed,
+       subtitle = "Specific Conductance Results by Sampling Location and Flow",
+       x = "",
+       y = "Specific Conductance (μS/cm)")
+
+# chloride graph
+# select data
+graphcl <- clcond_data %>%
+  filter(Parameter == "Total Chloride") %>%
+  filter(Group == .watershed) %>%
+  # build plot
+  ggplot() +
+  #boxplot
+  geom_boxplot_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+      middle = mean(ResultCalc),
+      fill = FlowCondition,
+      group = interaction(ChartName, FlowCondition),
+      data_id = FlowCondition,
+      tooltip = after_stat({
+        paste0(
+          "Q1: ", prettyNum(.data$ymin),
+          "\nMean: ", prettyNum(.data$middle),
+          "\nQ3: ", prettyNum(.data$ymax)
+        )})),
+    outlier.shape = NA
+      ) +
+  #xy plot
+  geom_point_interactive(
+    aes(x = fct_reorder(ChartName, Mile, .desc = TRUE), y = ResultCalc,
+        group = FlowCondition,
+        tooltip = paste0(
+        format(SampleDate, "%m/%d/%y"), "\n", ResultValue, " mg/L"
+      ),
+      fill = FlowCondition,
+      data_id = SampleDate
+        ),
+    shape = 21,
+    alpha = 0.5,
+    position = position_jitterdodge()
+  ) +
+  # flow colors
+  scale_fill_manual(name = "Flow", values = lmh_colors) +
+    # set all graphs to same scale
+  ylim(0, CLmax) +
+  # tilt text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  # remove flow colors from second legend
+  guides(color = "none") +
+  # labels
+  labs(subtitle = "Total Chloride Results by Sampling Location and Flow",
+       x = "Sampling Location",
+       y = "Total Chloride (mg/L)")
+
+# build html widget
+widget <- girafe(ggobj = graphcond / graphcl,
+                  height_svg = 8,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+  }
+
+# print widget
+widget
+# pull discussion text for results by flow
+cat("Discussion TBD")
+
+# if else to split between tributary groups vs rivers
+
+if (str_detect(.watershed, "Tributar")) {
+  # no chloride data for green tribs, remove that graph for them only
+  if (str_detect(.watershed, "Green")) {
+graph4 <- clcond_data %>%
+  filter(Parameter == "Specific Conductance") %>%
+  filter(Group == .watershed) %>%
+  # calculate averages by year
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc, na.rm = TRUE)) %>%
+  # build plot
+  ggplot() +
+  # column
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " μS/cm")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  facet_wrap(~FlowCondition) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  labs(title =.watershed,
+       subtitle = "Average Specific Conductance Results by Weather and Year",
+       x = "Sampling Location",
+       y = "Average Specific Conductance (μS/cm)")
+widget4 <- girafe(ggobj = graph4,
+                  options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget4
+
+  } else {
+  # cond bar graph
+  # select data
+graph3cond <- clcond_data %>%
+  filter(Parameter == "Specific Conductance") %>%
+  filter(Group == .watershed) %>%
+  # calculate averages by year
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc, na.rm = TRUE)) %>%
+  # build plot
+  ggplot() +
+  # column
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " μS/cm")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  facet_wrap(~FlowCondition) +
+  # remove redundant axis text
+  theme(axis.text.x = element_blank()) +
+  labs(title =.watershed,
+       subtitle = "Average Specific Conductance Results by Weather and Year",
+       x = "",
+       y = "Average Specific Conductance (μS/cm)")
+# cl bar graph
+# select data
+graph3cl <- clcond_data %>%
+  filter(Parameter == "Total Chloride") %>%
+  filter(Group == .watershed) %>%
+  # calculate yearly average
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc, na.rm = TRUE)) %>%
+  #build graph
+  ggplot() +
+  #bar graph
+  geom_col_interactive(
+    aes(
+      x = ChartName, y = Avg, fill = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2),
+                         " mg/L")
+      ), 
+    position = position_dodge(preserve = "single")
+    ) +
+  # year colors
+  scale_fill_manual(name = "Year", values = yearcolors) +
+  facet_wrap(~FlowCondition) +
+  # tilt axis text
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust =1)) +
+  guides(fill = "none") +
+  labs(subtitle = "Average Total Chloride Results by Weather and Year",
+       x = "Sampling Location",
+       y = "Average Total Chloride (mg/L)")
+# build html widget
+widget3 <- girafe(ggobj = graph3cond / graph3cl,
+                   height_svg = 8,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+# print widget
+widget3
+
+}} else {
+  # individual river line charts
+  # select data
+  graph2cond<- clcond_data %>%
+  filter(Parameter == "Specific Conductance") %>%
+    drop_na(ResultCalc) %>%
+  filter(Group == .watershed) %>%
+    #calculate averages
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc), na.rm = TRUE) %>%
+    #build graph
+  ggplot() +
+    #lines
+  geom_line_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear)) +
+    #points
+  geom_point_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2), " μS/cm")
+        )) +
+    # year colors
+  scale_color_manual(name = "Year", values = yearcolors) +
+    # reverse scale so upstream is left
+  scale_x_reverse() +
+  facet_wrap(~FlowCondition) +
+    theme(legend.position = NULL) +
+  labs(title = .watershed,
+       subtitle = "Average Specific Conductance Results by Weather and Year",
+       x = "River Mile",
+       y = "Average Specific Conductance (μS/cm)")
+
+  graph2cl<- clcond_data %>%
+  filter(Parameter == "Total Chloride") %>%
+  filter(Group == .watershed) %>%
+    drop_na(ResultCalc) %>%
+  group_by(Group, SiteID, Mile, ChartName, FlowCondition, SampleYear) %>%
+  summarise("Avg" = mean(ResultCalc), na.rm = TRUE) %>%
+  filter(Group == .watershed) %>%
+  ggplot() +
+  geom_line_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear)) +
+  geom_point_interactive(
+    aes(x = Mile, y = Avg, color = SampleYear,
+        data_id = paste0(ChartName,SampleYear),
+        tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(Avg, digits = 2), " mg/L")
+        )) +
+  scale_color_manual(name = "Year", values = yearcolors) +
+  scale_x_reverse() +
+  facet_wrap(~FlowCondition) +
+  labs(subtitle = "Average Total Chloride Results by Weather and Year",
+       x = "River Mile",
+       y = "Average Total Chloride (mg/L)")
+
+widget2 <- girafe(ggobj = graph2cond / graph2cl,
+                   height_svg = 8,
+       options = list(
+         opts_hover(css = "fill:cyan;"),
+         opts_hover_inv(css = "opacity:0.4;")
+       ))
+
+widget2
+}
+
+cat("discussion 2 TBD")
+
+```

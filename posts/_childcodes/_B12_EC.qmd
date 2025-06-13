@@ -61,13 +61,14 @@ if (str_detect(.watershed, "Tributar")) {
     aes(x = ChartName, y = GM, fill = SampleYear,
         data_id = paste0(ChartName,SampleYear),
         tooltip = paste0(ChartName, " - ", SampleYear, "\n", round(GM, digits = 2),
-                         " MPN/100mL")), position = "dodge") +
+                         " MPN/100mL")), position = position_dodge(preserve = "single")) +
   geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
   scale_linetype_manual(name = "", values = 2) +
-  scale_fill_viridis_d(name = "Year") +
+  scale_fill_manual(name = "Year", values = yearcolors) +
   facet_wrap(~WeatherStatus) +
   labs(title =.watershed,
        subtitle = "Average E. coli Results by Weather and Year",
+       x = "Sampling Location",
        y = "Average E. coli (MPN/100mL)")
 
 widget3 <- girafe(ggobj = graph3, 
@@ -92,12 +93,13 @@ widget3
         )) +
   geom_hline(aes(yintercept = swim_limit, linetype = "Swim\nLimit"), color = standardcolor) +
   scale_linetype_manual(name = "", values = 2) +
-  scale_color_viridis_d(name = "Year") +
+  scale_color_manual(name = "Year", values = yearcolors) +
   scale_x_reverse() +
   facet_wrap(~WeatherStatus) +
   labs(title = .watershed,
        subtitle = "Average E. coli Results by Weather and Year",
        x = "River Mile",
+       x = "Sampling Location",
        y = "Average E. coli (MPN/100mL)")
 
 widget2 <- girafe(ggobj = graph2, 
