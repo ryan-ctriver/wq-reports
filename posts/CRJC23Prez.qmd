@@ -1,0 +1,1023 @@
+---
+title: "2022-2023 CRJC Data Review"
+author: "Ryan O'Donnell"
+subtitle: "Two year summary of data collected by the Connecticut River Joint Commissions through the VT LaRosa Partnership and the NH Volunteer River Assessment Programs"
+date: "June 16, 2025"
+format:
+  revealjs:
+    theme: moon
+    transition: slide
+knitr:
+  opts_chunk:
+    dev: png
+    dev.args:
+      bg: transparent
+categories:
+  - presentation
+---
+
+```{r library}
+
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(maps)
+library(mapproj)
+library(sf)
+library(patchwork)
+library(ggiraph)
+library(maps)
+library(mapproj)
+library(ggtext)
+library(scales)
+library(htmlwidgets)
+library(gt)
+library(EnvStats)
+library(paletteer)
+library(dataRetrieval)
+library(ggnewscale)
+
+```
+
+```{r theme}
+moon_bkg <-       "#002b36"
+moon_base02 <-    "#073642"
+moon_base01 <-    "#586e75"
+moon_base00 <-    "#657b83"
+moon_base0 <-     "#839496"
+moon_main <-      "#93a1a1"
+moon_heading <-   "#eee8d5"
+moon_base3 <-     "#fdf6e3"
+moon_yellow <-    "#b58900"
+moon_orange <-    "#cb4b16"
+moon_red <-       "#dc322f"
+moon_magenta <-   "#d33682"
+moon_violet <-    "#6c71c4"
+moon_blue <-      "#268bd2"
+moon_cyan <-      "#2aa198"
+moon_green <-     "#859900"
+
+moon_theme <- function() {
+    theme(
+    rect = element_rect(fill = moon_main, color = NA),
+    text = element_text(color = moon_base3, size = 14),
+    plot.background = element_rect(fill = moon_bkg, color = NA),
+    axis.text = element_text(color = moon_base3, size = 11),
+    panel.background = element_rect(fill = moon_heading),
+    legend.text = element_text(color = "gray20"),
+    legend.title = element_text(color = "gray10"),
+    legend.box.background = element_rect(fill = moon_main, color = NA),
+    legend.background = element_rect(fill = moon_main, color = NA),
+    strip.background = element_rect(fill = moon_cyan, color = NA)
+  )
+}
+
+```
+
+```{r data cleanup}
+#| cache: TRUE
+
+# Bring in site info
+
+siteinfo <- read_xlsx(path = "_data/22_23CRJCResults.xlsx",
+                      sheet = 1) %>%
+  pivot_longer(
+    cols = c("VT-ID", "NH-ID"),
+    names_to = "State",
+    values_to = "SiteID",
+    values_drop_na = TRUE
+  )
+
+# Bring in NH data
+
+NHdata_orig <- read_xlsx(path = "_data/22_23CRJCResults.xlsx",
+                      sheet = 2,
+                      skip = 1,
+                      col_names = c(
+                        "SiteID", "SampleDate", "delete", "Parameter", "Result", "ResultUnit", "delete",
+                        "Lat", "Long", "SiteName", "delete", "delete", "delete", "delete", "delete", "delete",
+                        "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete",
+                        "delete", "delete", "delete", "ReplicateID", "DataStatus", "delete", "delete", "delete",
+                        "delete", "delete", "delete", "delete", "delete", "delete", "Rain-3daysprior", "delete",
+                        "ActivityComments", "delete", "delete", "delete", "ResultComments", "LabQ", "Lab", "delete",
+                        "delete", "ResultValid", "delete", "DetectionLimit", "DetectionComments", "delete", "delete",
+                        "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete",
+                        "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete",
+                        "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete", "delete",
+                        "VRAP"
+                      )
+                      ) %>%
+  select(-starts_with("delete")) %>%
+  mutate("ResultValue" = case_when(
+    str_detect(Result, "<") ~ 0.5 * parse_number(Result),
+    str_detect(Result, "ND") ~ 0.5 * DetectionLimit,
+    TRUE ~ parse_number(Result)
+  ))
+
+# Bring in VT data
+
+VTdata_orig <- read_xlsx(path = "_data/22_23CRJCResults.xlsx",
+                      sheet = 3,
+                      skip = 1,
+                      col_names = c(
+                        "SampleDate", "delete", "delete", "delete", "SiteID", "delete", "delete", "delete",
+                        "delete", "SiteName", "delete", "delete", "delete", "Lat", "Long", "delete", "ProjectRefID",
+                        "delete", "delete", "delete", "Lab", "FlowLevel", "FlowType", "Parameter", "RemarkCode",
+                        "ResultUnit", "ResultValue"
+                      )
+                      ) %>%
+  select(-starts_with("delete"))
+
+# combine data
+
+alldatacombined <- bind_rows(NHdata_orig, VTdata_orig)
+
+# clean up data/duplicates
+
+parameters <- c("CHLORIDE", "NITROGEN", "PHOSPHORUS AS P", "SPECIFIC CONDUCTANCE",
+                            "DISSOLVED OXYGEN", "DISSOLVED OXYGEN SATURATION", "TEMPERATURE WATER",
+                            "TURBIDITY", "PH", "Total Chloride", "Total Nitrogen", "Total Phosphorus")
+
+alldata_cleaned <- alldatacombined %>%
+  select(c(
+    "SiteID",
+    "SampleDate",
+    "Parameter",
+    "ResultValue"
+  )
+  ) %>%
+  left_join(
+    .,
+    siteinfo,
+    by = "SiteID"
+  ) %>%
+  filter(Parameter %in% parameters) %>%
+  mutate(
+    SiteID = `Combined-ID`,
+    Parameter = case_when(
+      str_detect(`Parameter`, "CHLORIDE") ~ "Total Chloride", 
+      str_detect(`Parameter`, "NITROGEN") ~ "Total Nitrogen", 
+      str_detect(`Parameter`, "PHOSPHORUS AS P") ~ "Total Phosphorus", 
+      str_detect(`Parameter`, "SPECIFIC CONDUCTANCE") ~ "Specific Conductance",
+      str_detect(`Parameter`, "DISSOLVED OXYGEN") ~ "Dissolved Oxygen", 
+      str_detect(`Parameter`, "DISSOLVED OXYGEN SATURATION") ~ "Dissolve Oxygen %", 
+      str_detect(`Parameter`, "TEMPERATURE WATER") ~ "Water Temperature",
+      str_detect(`Parameter`, "TURBIDITY") ~ "Turbidity", 
+      str_detect(`Parameter`, "PH") ~ "pH",
+      TRUE ~ `Parameter`
+    ),
+    "Year" = year(SampleDate),
+    "Month" = month(SampleDate)
+  ) %>%
+  select(-c("State", "Combined-ID")) %>%
+  drop_na(SiteID) %>%
+  drop_na(ResultValue) %>%
+  unique()
+
+##### calculate flows
+
+end_year = 2023
+
+### Disables scientific notation
+options(scipen=999)
+
+# Add leading zero for USGS gages
+
+alldata_cleaned <- alldata_cleaned %>%
+  mutate(`USGS Gage ID` = ifelse(is.na(`USGS Gage ID`), NA_character_, 
+                                 str_c("0", `USGS Gage ID`, sep="")),
+         `USGS Gage ID2` = ifelse(is.na(`USGS Gage ID2`), NA_character_, 
+                                  str_c("0", `USGS Gage ID2`, sep="")))
+
+# Create list of gages and sample dates to pull from USGS database
+# readNWISdv is slow so reducing the number of queries as much as possible speeds up the following steps
+
+gages_dates <- alldata_cleaned %>%
+  select(c("SampleDate","USGS Gage ID","USGS Gage ID2")) %>%
+  pivot_longer(cols = c("USGS Gage ID","USGS Gage ID2"),
+               names_to = NULL,
+               values_to = "GageID") %>%
+  drop_na("GageID") %>%
+  distinct()
+
+# map streamflows and h/l flows from USGS for each date/gage combo
+# thanks to MR for simplifying this for me!
+
+# calculate h/m/lo flows for each station
+
+gages_only <- gages_dates %>%
+  select("GageID") %>%
+  unique()
+
+# pull dv flows for each gage for previous 30 years
+
+gages_percent_rank <- map_dfr(
+  gages_only$GageID,
+  ~readNWISdv(siteNumbers = .x,
+              parameterCd = "00060",
+              startDate = paste((end_year-30),"10-01", sep = "-"),
+              endDate = paste(end_year, "10-01", sep = "-"))) %>%
+  rename("GageID" = "site_no",
+         "Daily_cfs" = "X_00060_00003") %>%
+  group_by(GageID) %>%
+  mutate("PercentRank" = rank(Daily_cfs)/length(Daily_cfs)) %>%
+  select(c("GageID", "Date", "Daily_cfs", "PercentRank"))
+
+# pull daily streamflows and percent rank for each date
+
+gage_flows_by_date <-  left_join(
+  gages_dates,
+  gages_percent_rank,
+  by = c("GageID", "SampleDate" = "Date")
+)
+
+# USGS gage drainage areas
+
+gage_drainage <- purrr::map_dfr(gages_only$GageID,
+                                ~readNWISsite(siteNumbers = .x)) %>%
+  rename("GageID" = "site_no",
+         "gage_drainage" = "drain_area_va") %>%
+  select(c("GageID", "gage_drainage")) %>%
+  tibble()
+
+# calculate cfsm (cubic feet per second per square mile)
+
+gages_ranked_cfsm <- left_join(
+  gage_flows_by_date,
+  gage_drainage,
+  by = "GageID") %>%
+  mutate("gage_daily_cfsm" = Daily_cfs/gage_drainage) %>%
+  select(-c("gage_drainage", "Daily_cfs"))
+
+# bind flows to results and estimate flows at site
+
+alldata_cleaned_flows <- left_join(
+  alldata_cleaned,
+  gages_ranked_cfsm,
+  by = c("SampleDate", "USGS Gage ID" = "GageID")) %>%
+  rename("Gage1_cfsm" = gage_daily_cfsm,
+         "flowrank1" = PercentRank) %>%
+  left_join(
+    .,
+    gages_ranked_cfsm,
+    by = c("SampleDate", "USGS Gage ID2" = "GageID")) %>%
+  rename("Gage2_cfsm" = gage_daily_cfsm,
+         "flowrank2" = PercentRank) %>%
+  group_by(SiteID, SampleDate) %>%
+  mutate("Est_percentrank" = mean(c(flowrank1, flowrank2), na.rm = TRUE),
+         "FlowCondition" = case_when(
+           Est_percentrank >= 0.75 ~ "High",
+           Est_percentrank <= 0.25 ~ "Low",
+           is.na(Est_percentrank) ~ NA_character_,
+           TRUE ~ "Moderate"
+         ))
+
+
+```
+
+# Program Details 
+::: columns
+
+::: {.column width="50%"}
+![](images/vt_outline.png){height=500 fig.align="center"}
+:::
+::: {.column width="50%"}
+![](images/nh_outline.png){height=500 fig.align="center"}
+:::
+:::
+
+## LaRosa Partnership Program 
+
+::: columns
+
+::: {.column width="35%"}
+![](images/vt_outline.png){height=500 fig.align="center"}
+:::
+
+::: {.column width="60%"}
+
+-  Program administered by the Vermont Agency of Natural Resources
+-  Parameters tested at VT Agricultural and Environmental Lab (VAEL)
+-  Total Nitrogen
+-  Total Phosphorus
+-  Total Chloride
+:::
+
+:::
+
+## Volunteer River Assessment Program 
+::: {.column width="35%"}
+![](images/nh_outline.png){height=500}
+:::
+
+::: {.column width="60%"}
+
+-  Program administered by the New Hampshire Department of Environmental Services
+-  Water tested using meters loaned by DES to groups
+-  Dissolved Oxygen
+-  pH
+-  Specific Conductance
+-  Turbidity
+
+:::
+
+## Site Map
+```{r site map}
+#| warning: FALSE
+
+# Watershed States
+vtnh <- map_data("state") %>% 
+  filter(region %in% c("vermont", "new hampshire"))
+
+vtnheco <- st_read("_data/_maps/epa ecoregions wgs84.shp", quiet = TRUE) %>%
+  fortify() %>%
+  filter(STATE_NAME %in% c("Vermont", "New Hampshire")) %>%
+  filter(US_L3NAME != "Eastern Great Lakes Lowlands") %>%
+  mutate(US_L3NAME = case_when(
+    str_detect(US_L3NAME, "Highlands") ~ paste(US_L3NAME, "(VIII)"),
+    str_detect(US_L3NAME, "Coastal") ~ paste(US_L3NAME, "(XIV)")
+  ))
+
+dissolved <- vtnheco %>%
+  group_by(EPA_REGION) %>%
+  summarise()
+
+ctrshed <- st_read("_data/_maps/ctr-watershed.shp", quiet = TRUE) %>%
+  st_intersection(., dissolved) %>%
+  fortify()
+
+sitelist_point <- alldata_cleaned %>%
+  select(c("SiteID", "Name", "Lat", "Long")) %>%
+  unique()
+
+ggplot() +
+  geom_polygon(data = vtnh, aes(x = long, y = lat, group = region), color = moon_base02, fill= "olivedrab4") +
+  geom_sf(data = vtnheco, aes(fill = US_L3NAME), color = moon_base02) +
+  scale_fill_manual(values = c(moon_cyan, moon_green), name = "EPA EcoRegion", guide = guide_legend(ncol = 2, order =2 )) +
+  geom_sf(data = ctrshed, aes(color = "Connecticut River"), fill = "transparent", linewidth = 1) +
+  scale_color_manual(values = moon_violet, name = "Watershed Boundary", guide = guide_legend(order = 3)) +
+  coord_sf() +
+  new_scale_fill() +
+  geom_point(data = sitelist_point, aes(x = Long, y = Lat, fill = fct_reorder(Name, Lat, .desc = TRUE)), size = 3, shape = 21, color ="black") +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sampling Location", guide = guide_legend(ncol = 2, order = 1)) +
+  expand_limits(x = vtnh$long, y = vtnh$lat) +
+  scale_shape_identity() +
+  theme_void() +
+  theme(
+  panel.background = element_rect(fill = "transparent",
+                                  colour = NA_character_), # necessary to avoid drawing panel outline
+  panel.grid.major = element_blank(), # get rid of major grid
+  panel.grid.minor = element_blank(), # get rid of minor grid
+  plot.background = element_rect(fill = "transparent",
+                                 colour = NA_character_), # necessary to avoid drawing plot outline
+  legend.box.background = element_rect(fill = moon_base3, color = moon_base02, ),
+  legend.key = element_rect(fill = "transparent")
+)
+
+```
+
+# LPP - Total Phosphorus
+
+## Phosphorus Standards {.smaller .scrollable}
+
+::: columns
+
+::: {.column width=50%}
+
+### VT Standard:
+- In all waters, total phosphorus loadings shall be limited so that they will not contribute to the acceleration of eutrophication or stimulation of the growth of aquatic biota in a manner that prevents the full support of uses.
+- Class A(1), B(1) – Small, high-gradient: 10 ug/L
+- Class A(1), B(1) – Medium, high-gradient: 9 ug/L
+- Class A(1)- Warm-water, medium-gradient: 18 ug/L
+- Class B(1) – Warm-water, medium-gradient: 21 ug/L
+- Class A(2), B(2) – Small, high-gradient: 12 ug/L
+- Class A(2), B(2) – Medium, high-gradient: 15 ug/L
+- Class A(2), B(2) – Warm-water, medium-gradient: 27 ug/L
+
+::: 
+
+::: {.column width=50%}
+
+### NH Standard:
+- Class A waters shall contain no phosphorus unless naturally occurring.
+- Class B waters shall contain no phosphorus in such concentrations that would impair any existing or designated uses, unless naturally occurring.
+
+### EPA Recommendation:
+- EcoRegion VIII - 10 µg/L
+- EcoRegion XIV - 32.25 µg/L
+
+:::
+
+:::
+
+## Phosphorus by Year
+
+```{r phosphorus year}
+
+phosphorus <- alldata_cleaned_flows %>%
+  filter(Parameter == "Total Phosphorus")
+
+
+ggplot(phosphorus, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  geom_vline(aes(xintercept = 10, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_vline(aes(xintercept = 32.25, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Total Phosphorus (µg/L)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Phosphorus by Month
+
+```{r phosphorus month}
+ggplot(phosphorus, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 10, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 32.25, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Total Phosphorus (µg/L)"
+  ) + moon_theme()
+
+```
+## Phosphorus by Flow
+
+```{r phosphorus flow}
+ggplot(phosphorus, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 10, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 32.25, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Total Phosphorus (µg/L)"
+  ) + moon_theme()
+
+```
+# LPP - Total Nitrogen
+
+## Nitrogen Standards {.smaller}
+
+::: columns
+
+::: {.column width=50%}
+
+### VT Standard:
+- All Waters: Nitrates shall be limited so not to contribute to the acceleration of eutrophication, or stimulation of the growth of aquatic biota, in a manner that prevents the full support of uses.
+- Other Class A(1) and A(2) waters above 2,500 feet altitude, NGVD: Not to exceed 0.2 mg/L as nitrate-nitrogen at flows exceeding low median monthly flows.
+- Other Class A(1) and A(2) waters at or below 2,500 feet altitude, NGVD: Not to exceed 2.0 mg/L as nitrate-nitrogen at flows exceeding low median monthly flows.
+
+::: 
+
+::: {.column width=50%}
+
+### NH Standard:
+- Class A waters shall contain no nitrogen unless naturally occurring.
+-Class B waters shall contain no nitrogen in such concentrations that would impair any existing or designated uses, unless naturally occurring.
+
+### EPA Recommendation:
+- EcoRegion VIII - 0.38 mg/L
+- EcoRegion XIV - 0.71 mg/L
+
+:::
+
+:::
+
+## Nitrogen by Year
+
+```{r Nitrogen year}
+
+nitrogen <- alldata_cleaned_flows %>%
+  filter(Parameter == "Total Nitrogen")
+
+
+ggplot(nitrogen, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  geom_vline(aes(xintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_vline(aes(xintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Total Nitrogen (mg/L)",
+    y = ""
+  ) + 
+  moon_theme()
+
+```
+
+## Nitrogen by Month
+
+```{r nitrogen month}
+ggplot(nitrogen, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Total Nitrogen (mg/L)"
+  ) +
+  moon_theme()
+
+```
+## Nitrogen by Flow
+
+```{r nitrogen flow}
+ggplot(nitrogen, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Total Nitrogen (mg/L)"
+  ) + moon_theme()
+
+```
+
+# LPP - Total Chloride
+
+## Chloride Standards {.smaller}
+
+### VT, NH, & EPA
+- For protection of freshwater aquatic life: 860 mg/L maximum concentration; 230 mg/L continuous concentration.
+
+## Chloride by Year
+
+```{r chloride year}
+
+chloride <- alldata_cleaned_flows %>%
+  filter(Parameter == "Total Chloride")
+
+
+ggplot(chloride, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  #geom_vline(aes(xintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_vline(aes(xintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Total Chloride (mg/L)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Chloride by Month
+
+```{r chloride month}
+ggplot(chloride, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Total Chloride (mg/L)"
+  ) + moon_theme()
+
+```
+## Chloride by Flow
+
+```{r chloride flow}
+ggplot(chloride, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 5, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Total Chloride (mg/L)"
+  ) + moon_theme()
+
+```
+
+# VRAP - Dissolved Oxygen
+
+## Dissolved Oxygent Standards {.smaller .scrollable}
+
+### VT Standard:
+- Class A(1) Ecological Waters: As exists in waters in their natural condition.
+- Class A(2), B: The specified dissolved oxygen criteria for each designated fish habitat type will be considered absolute instantaneous minimum values. In addition, fluctuations above the minimum values shall be maintained as necessary to support aquatic habitat.
+- Cold Water Fish Habitat – Not less than 7mg/L and 75% saturation at all times, nor less than 95% saturation during late egg maturation and larval development of salmonids in areas that the secretary determines are salmonid spawning or nursery areas important to the establishment or maintenance of the fishery resource. Not less than 6 mg/L and 70% saturation at all times in all other waters designated as a cold water fish habitat.
+- Warm Water Fish Habitat: Not less than 5 mg/L and 60% saturation at all times.
+
+### NH Standard:
+- Class A: At least 75% DO saturation...and an instantaneous amount of at least 6.0 mg/L at any place or time except as naturally occurs.
+- Class B: Surface waters...shall contain at least 75% DO saturation, based on a daily average and an instantaneous minimum DO content of at least 5 mg/L...From October 1st to May 14th, in identified cold water fish spawning areas of species whose early life stages are buried in the gravel on the bed of the surface water, the 7 day mean dissolved oxygen concentration shall be at least 9.5 mg/L and the instantaneous minimum dissolved oxygen concentration shall be at least 8 mg/L...
+
+
+### EPA Recommendation:
+- Cold Water Criteria: 30 day mean of 6.5 mg/L for other (non-early) life stages; 7 day mean of 9.5 mg/L for early life stages; 7 day mean minimum of 5.0 mg/L for other life stages; 1 day minimum of 8.0 mg/L for early life stages and 4.0 mg/L for other life stages.
+- Warm Water Criteria: 30 day mean of 5.5 mg/L for other life stages; 7 day mean of 6.0 mg/L for early life stages; 7 day mean minimum of 4.0 mg/L for other life stages; 1 day minimum of 5.0 mg/L for early life stages and 3.0 mg/L for other life stages.
+
+
+
+## Dissolved Oxygen by Year
+
+```{r do year}
+
+do <- alldata_cleaned_flows %>%
+  filter(Parameter == "Dissolved Oxygen")
+
+
+ggplot(do, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  #geom_vline(aes(xintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_vline(aes(xintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Dissolved Oxygen (% Saturation)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Dissolved Oxygen by Month
+
+```{r do month}
+ggplot(do, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Dissolved Oxygen (% Saturation)"
+  ) + moon_theme()
+
+```
+## Dissolved Oxygen by Flow
+
+```{r do flow}
+ggplot(do, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Dissolved Oxygen (% Saturation)"
+  ) + moon_theme()
+
+```
+
+# VRAP - pH
+
+## pH Standards {.smaller}
+
+### VT Standard:
+- pH values shall be maintained within the range of 6.5 and 8.5. Both the change and rate of change in pH values shall be controlled to ensure the full support of the aquatic biota, wildlife, and aquatic habitat uses.
+
+### NH Standard:
+- Class A: Shall be as naturally occurs.
+- Class B: Shall be 6.5-8.0, unless due to natural causes.
+
+### EPA Recommendation:
+- For protection of aquatic life: 6.5-9 continuous concentration.
+- For protection of human health: 5-9 for consumption of water and organisms.
+
+
+## pH by Year
+
+```{r ph year}
+
+ph <- alldata_cleaned_flows %>%
+  filter(Parameter == "pH")
+
+
+ggplot(ph, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  geom_vline(aes(xintercept = 6.5, linetype = "Min"), color = moon_orange, size = 1) +
+  geom_vline(aes(xintercept = 8.5, linetype = "Max"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Standard Range", values = c(2,3)) +
+  labs(
+    x = "pH",
+    y = ""
+  ) + moon_theme()
+```
+
+## pH by Month
+
+```{r ph month}
+ggplot(ph, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 6.5, linetype = "Min"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 8.5, linetype = "Max"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Standard Range", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "pH"
+  ) + moon_theme()
+
+```
+## pH by Flow
+
+```{r ph flow}
+ggplot(ph, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 6.5, linetype = "Min"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 8.5, linetype = "Max"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Standard Range", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "pH"
+  ) + moon_theme()
+
+```
+# VRAP - Turbidity
+
+## Turbidity Standards {.smaller .scrollable}
+
+### VT Standard:
+- Class A and in Cold Water Fish Habitat Waters: None in such amounts or concentrations that would prevent the full support of uses, and not to exceed 10 NTU as an average under dry weather base-flow conditions.”
+- Class B and in Warm Water Fish Habitat Waters: None in such amounts or concentrations that would prevent the full support of uses, and not to exceed 25 NTU as an annual average under dry weather base-flow conditions.
+
+### NH Standard:
+- Class A: Shall contain no color and or turbidity unless naturally occurring.
+- Class B: Shall contain no color in such concentrations that would impair any existing or designated uses, unless naturally occurring. Turbidity shall not exceed naturally occurring conditions by more than 10 NTUs.
+
+### EPA Recommendation:
+- Waters shall be virtually free from substances producing objectionable color for aesthetic purposes and free from substances attributable to wastewater or other discharges that produce objectionable color, odor, taste, or turbidity.
+
+## Turbidity by Year
+
+```{r turb year}
+
+turb <- alldata_cleaned_flows %>%
+  filter(Parameter == "Turbidity")
+
+
+ggplot(turb, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  # geom_vline(aes(xintercept = 10, linetype = "VT Cold / NH B"), color = moon_orange, size = 1) +
+  # geom_vline(aes(xintercept = 25, linetype = "VT Warm"), color = moon_magenta, size = 1) +
+  # scale_linetype_manual(name = "Standards", values = c(2,3)) +
+  labs(
+    x = "Turbidity (NTU)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Turbidity by Month
+
+```{r turb month}
+ggplot(turb, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 10, linetype = "VT Cold / NH B"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 25, linetype = "VT Warm"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "Standards", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Turbidity (NTU)"
+  ) + moon_theme()
+
+```
+## Turbidity by Flow
+
+```{r turb flow}
+ggplot(turb, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  # geom_hline(aes(yintercept = 10, linetype = "VT Cold / NH B"), color = moon_orange, size = 1) +
+  # geom_hline(aes(yintercept = 25, linetype = "VT Warm"), color = moon_magenta, size = 1) +
+  # scale_linetype_manual(name = "Standards", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Turbidity (NTU)"
+  ) + moon_theme()
+
+```
+# VRAP - Specific Conductance
+
+## Specific Conductance Standards
+- No Standards
+
+## Specific Conductance by Year
+
+```{r cond year}
+
+cond <- alldata_cleaned_flows %>%
+  filter(Parameter == "Specific Conductance")
+
+
+ggplot(cond, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  #geom_vline(aes(xintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_vline(aes(xintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Specific Conductance (µS/cm)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Specific Conductance by Month
+
+```{r cond month}
+ggplot(cond, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Specific Conductance (µS/cm)"
+  ) + moon_theme()
+
+```
+## Specific Conductance by Flow
+
+```{r cond flow}
+ggplot(cond, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, ) +
+  #geom_hline(aes(yintercept = 0.38, linetype = "VIII"), color = moon_orange, size = 1) +
+  #geom_hline(aes(yintercept = 0.71, linetype = "XIV"), color = moon_magenta, size = 1) +
+  #scale_linetype_manual(name = "EcoRegion Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Specific Conductance (µS/cm)"
+  ) + moon_theme()
+
+```
+# VRAP - Water Temperature
+
+## Temperature Standards {.smaller}
+
+::: columns
+
+::: {.column width="50%"}
+
+### VT Standard:
+- General. The change or rate of change in temperature, either upward or
+downward, shall be controlled to ensure full support of aquatic biota, wildlife, and aquatic habitat uses. For the purpose of applying this criterion, ambient
+temperature shall mean the water temperature measured at a control point
+determined by the Secretary to be outside the influence of a discharge or activity.
+:::
+::: {.column width="50%"}
+### NH Standard:
+- Class A: There shall be no change in temperature unless naturally occurring.
+- Class B: Any stream temperature increase associated with the discharge of treated sewage, waste or cooling water, water diversions, or releases shall not be such as to appreciably interfere with the uses assigned to this class.
+:::
+:::
+
+## Water Temperature by Year
+
+```{r temp year}
+
+temp <- alldata_cleaned_flows %>%
+  filter(Parameter == "Water Temperature")
+
+
+ggplot(temp, aes(x = ResultValue, y = fct_reorder(Name, SiteNumber, .desc = TRUE), fill = as_factor(Year))) +
+  geom_boxplot() +
+  paletteer::scale_fill_paletteer_d("vapeplot::vaporwave", name = "Sample Year") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  geom_vline(aes(xintercept = 20, linetype = "Cold"), color = moon_orange, size = 1) +
+  geom_vline(aes(xintercept = 29, linetype = "Warm"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Fishery Threshold", values = c(2,3)) +
+  labs(
+    x = "Water Temperature (°C)",
+    y = ""
+  ) + moon_theme()
+```
+
+## Water Temperature by Month
+
+```{r temp month}
+ggplot(temp, aes(x = as_factor(Month), y = ResultValue, fill = as_factor(Month))) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Apr", "May", "Jun", "Jul", "Aug"), guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::mallsoft") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  geom_hline(aes(yintercept = 20, linetype = "Cold"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 29, linetype = "Warm"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Fishery Threshold", values = c(2,3)) +
+  labs(
+    x = "Sample Month",
+    y = "Water Temperature (°C)"
+  ) + moon_theme()
+
+```
+## Water Temperature by Flow
+
+```{r temp flow}
+ggplot(temp, aes(x = fct_relevel(FlowCondition, c("Low", "Moderate", "High")), y = ResultValue, fill = fct_relevel(FlowCondition, c("Low", "Moderate", "High")))) +
+  geom_boxplot() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  #scale_y_log10() +
+  #geom_point(aes(color = Name), position = "jitter") +
+  paletteer::scale_fill_paletteer_d("vapeplot::crystal_pepsi") +
+  theme(legend.position = "none") +
+  facet_wrap(vars(fct_reorder(Name, SiteNumber, .desc = FALSE)), ncol = 3, ) +
+  geom_hline(aes(yintercept = 20, linetype = "Cold"), color = moon_orange, size = 1) +
+  geom_hline(aes(yintercept = 29, linetype = "Warm"), color = moon_magenta, size = 1) +
+  scale_linetype_manual(name = "Fishery Threshold", values = c(2,3)) +
+  labs(
+    x = "Flow Level",
+    y = "Water Temperature (°C)"
+  ) + moon_theme()
+
+```
+# Questions?
+
+Contact: rodonnell@ctriver.org

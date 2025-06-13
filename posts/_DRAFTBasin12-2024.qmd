@@ -2,7 +2,7 @@
 title: "DRAFT 2024 Basin 12 Water Quality Review"
 author: "Ryan O'Donnell"
 desription: "Three year summary of water quality results collected by Deerfield River Watershed Association volunteers"
-date: "7/15/2024"
+date: "11/20/2024"
 format:
   html:
     df-print: paged
@@ -50,6 +50,8 @@ library(EnvStats)
 
 ```{r data}
 
+### 1/3/25 note - 2022 Conductivity data is MISSING from Whetstone brook
+
 Basin12 <- read_xlsx("_data/24Basin12Data.xlsx") %>%
   separate(`SiteID`, c("State", "River", "Mile"), sep = "-|_", remove = FALSE) %>%
   drop_na(ResultValue) %>%
@@ -83,15 +85,48 @@ Basin12 <- read_xlsx("_data/24Basin12Data.xlsx") %>%
       SiteID = case_when(
       SiteID == "VT-ELS_00.2" & SampleYear < 2023 ~ "VT-NEG_00.2",
       TRUE ~ SiteID
-    )) %>%
+    ),
+    FlowCondition = factor(FlowCondition, levels = c("Low", "Moderate", "High"))) %>%
   rename(ChartName = `Chart Name`)
 
 wetdry_colors <- c("Dry" = "#44AA99", "Wet" = "#554499")
 lmh_colors <- c("Low" = "#88CCEE", "Moderate" = "#DDCC77", "High" = "#CC6677")
 standardcolor <- "#AA4499"
 standardcolor2 <- "#442222"
+yearcolors <- c("2014" = "#202547FF",
+                "2015" = "#43444AFF",
+                "2016" = "#5F654AFF",
+                "2017" = "#7B8948FF",
+                "2018" = "#97B043FF",
+                "2019" = "#B2D736FF",
+                "2020" = "#CEFF1AFF",
+                "2021" = "#D8E01BFF",
+                "2022" = "#DFC11BFF",
+                "2023" = "#E2A11BFF")
 
 watersheds <- unique(Basin12$Group)
+
+# add a dummy row for every site and year combo to make sure every site shows up on every graph
+
+# generate the possible combinations for each watershed group
+
+Basin12_expanded <- Basin12 %>%
+  group_by(Group) %>%
+  expand(SiteID, Parameter, FlowCondition, WeatherStatus, SampleYear)
+
+# join to data and fill in important repeated information
+
+Basin12NAs <- Basin12 %>%
+  bind_rows(., Basin12_expanded) %>%
+  group_by(SiteID) %>%
+  fill(c(State:ChartName)) %>%
+  ungroup() %>%
+  group_by(Parameter) %>%
+  fill(ResultUnit) %>%
+  ungroup() %>%
+  mutate(ResultCalc = as.numeric(ResultCalc),
+         FlowCondition = factor(FlowCondition, levels = c("Low", "Moderate", "High")))
+
 ```
 
 INTRO
@@ -115,7 +150,7 @@ bacteria_data <- Basin12 %>%
   filter(SiteID != "VT-NBD_12.5") %>%
   filter(SiteID != "VT-NBD_01.3")
 
-ECmax <- max(bacteria_data$ResultCalc)
+ECmax <- max(bacteria_data$ResultCalc, na.rm = TRUE)
 
 swim_limit = 235
 
@@ -145,19 +180,20 @@ cat(res, sep = '\n\n')
 
 nutrient_data <- Basin12 %>%
   filter(Parameter %in% c("Total Nitrogen", "Total Phosphorus")) %>%
-  filter(SiteID != "VT-NBD_01.3")
+  filter(SiteID != "VT-NBD_01.3") %>%
+  arrange(FlowCondition)
 
 TNmax <- nutrient_data %>%
   filter(Parameter == "Total Nitrogen")
 
-TNmax <- max(TNmax$ResultCalc)
+TNmax <- max(TNmax$ResultCalc, na.rm = TRUE)
 
 TN_standard <- 0.38
 
 TPmax <- nutrient_data %>%
   filter(Parameter == "Total Phosphorus")
 
-TPmax <- max(TPmax$ResultCalc)
+TPmax <- max(TPmax$ResultCalc, na.rm = TRUE)
 
 TP_standardA1 <- 9
 TP_standardB2 <- 15
@@ -185,7 +221,78 @@ cat(res, sep = '\n\n')
 
 ## Chloride/Conductivity
 
+```{r cl cond set-up}
+
+clcond_data <- Basin12NAs %>%
+  filter(Parameter %in% c("Total Chloride", "Specific Conductance")) %>%
+  filter(SiteID != "VT-NBD_01.3") %>%
+  arrange(FlowCondition)
+
+condmax <- clcond_data %>%
+  filter(Parameter == "Specific Conductance")
+
+condmax <- max(condmax$ResultCalc, na.rm = TRUE)
+
+CLmax <- clcond_data %>%
+  filter(Parameter == "Total Chloride")
+
+CLmax <- max(CLmax$ResultCalc, na.rm = TRUE)
+
+```
+
+::: {.panel-tabset group="watershed"}
+
+```{r cl cond graphs}
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_B12_cl_cond.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+:::
+
 ## Turbidity
+
+```{r turb set-up}
+
+turb_data <- Basin12NAs %>%
+  filter(Parameter %in% c("Turbidity")) %>%
+  filter(SiteID != "VT-NBD_01.3") %>%
+  arrange(FlowCondition)
+
+turbmax <- max(turb_data$ResultCalc, na.rm = TRUE)
+
+turb_standard_A1 <- 10
+turb_standard_other <- 25
+
+```
+
+::: {.panel-tabset group="watershed"}
+
+```{r turb graphs}
+#| output: asis
+#| echo: false
+
+res <- purrr::map_chr(watersheds, \(.watershed) {
+    knitr::knit_child(
+      input = "_childcodes/_B12_turb.qmd", 
+      envir = environment(), 
+      quiet = TRUE
+      )
+  })
+
+cat(res, sep = '\n\n')
+```
+
+:::
 
 ## Discussion
 
